@@ -2,6 +2,8 @@
 
 Edit the text in a PDF right in your browser, then download the edited copy.
 
+Made by [PVS Prasanth](https://github.com/pvsp2003).
+
 **Live:** https://pvsp2003.github.io/pdf-editor/
 
 Nothing is uploaded. The PDF is opened, edited and saved entirely on your own device.

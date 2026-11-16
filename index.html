@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PDF Editor</title>
+<meta name="author" content="PVS Prasanth">
+<meta name="description" content="Edit text in PDFs right in your browser. Made by PVS Prasanth.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -133,7 +135,11 @@
   }
   footer .status { overflow: hidden; text-overflow: ellipsis; }
   footer .hint { margin-left: auto; }
-  @media (max-width: 600px) { footer .hint { display: none; } }
+  footer .credit { flex: none; color: var(--ink); text-decoration: none; padding-left: 16px; border-left: 1px solid var(--line); }
+  footer .credit:hover { text-decoration: underline; }
+  @media (max-width: 600px) { footer .hint { display: none; } footer .credit { margin-left: auto; } }
+  #drop .credit-line { margin-top: 8px; }
+  #drop .credit-line a { color: var(--ink); }
 
   /* Text boxes sit over the rendered page. Untouched ones are invisible so the original shows through. */
   .box {
@@ -342,6 +348,7 @@
     <p>Drag a file onto this window, or choose one.</p>
     <label class="btn" for="fileInput">Choose file…</label>
     <p class="fine">The file stays on your computer. Nothing is uploaded.</p>
+    <p class="fine credit-line">Made by <a href="https://github.com/pvsp2003" target="_blank" rel="noopener">PVS Prasanth</a> · <a href="https://github.com/pvsp2003/pdf-editor" target="_blank" rel="noopener">Source on GitHub</a></p>
   </div>
   <div id="pages"></div>
 </main>
@@ -379,6 +386,7 @@
 <footer>
   <span class="status" id="status">No document</span>
   <span class="hint" id="hint">Click text to edit it · Ctrl+F find &amp; replace</span>
+  <a class="credit" href="https://github.com/pvsp2003" target="_blank" rel="noopener">Made by PVS Prasanth</a>
 </footer>
 <div id="toast"></div>
 
