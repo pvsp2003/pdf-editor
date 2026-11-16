@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  :root {
+    --chrome: #f7f6f3;      /* toolbar + status bar */
+    --desk: #dedbd5;        /* area behind the pages */
+    --ink: #1c1b19;
+    --muted: #75726b;
+    --line: #d6d3cc;
+    --line-strong: #bdb9b0;
+    --hover: #ebe9e4;
+    --pressed: #e2dfd9;
+    --accent: #d4461b;      /* selection, guides, focus */
+    --on-ink: #f7f6f3;
+    --danger: #b42318;
+    --page-shadow: 0 1px 2px rgba(28, 27, 25, .18), 0 4px 14px rgba(28, 27, 25, .10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --chrome: #1f1e1c;
+      --desk: #141312;
+      --ink: #ecebe7;
+      --muted: #9a978f;
+      --line: #33312e;
+      --line-strong: #4a4743;
+      --hover: #2a2926;
+      --pressed: #34322f;
+      --accent: #f0703f;
+      --on-ink: #1f1e1c;
+      --danger: #f97066;
+      --page-shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 20px rgba(0, 0, 0, .45);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column; background: var(--desk); color: var(--ink);
+    font: 13px/1.4 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, Consolas, monospace; }
+  svg.i { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* ---------- toolbar ---------- */
+  header {
+    flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    min-height: 48px; padding: 6px 12px; background: var(--chrome); border-bottom: 1px solid var(--line);
+  }
+  header h1 { font-size: 13px; font-weight: 600; margin: 0 10px 0 2px; white-space: nowrap; letter-spacing: .01em; }
+  .sep { width: 1px; align-self: stretch; margin: 4px 8px; background: var(--line); }
+  .group { display: flex; align-items: center; gap: 2px; }
+
+  button, .btn {
+    font: inherit; font-weight: 500; height: 30px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px;
+    white-space: nowrap; cursor: pointer; color: var(--ink); background: transparent;
+    border: 1px solid transparent; border-radius: 5px;
+  }
+  button:hover:not(:disabled), .btn:hover { background: var(--hover); }
+  button:active:not(:disabled), .btn:active { background: var(--pressed); }
+  button:disabled { color: var(--muted); opacity: .5; cursor: default; }
+  button:focus-visible, .btn:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  button.icon { width: 30px; padding: 0; justify-content: center; }
+  #bold.on { background: var(--pressed); border-color: var(--line-strong); }
+  #del:hover:not(:disabled) { color: var(--danger); }
+
+  /* mode switch */
+  .seg { display: flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; }
+  .seg button { border-radius: 0; height: 28px; border: 0; }
+  .seg button + button { border-left: 1px solid var(--line-strong); }
+  .seg button.on, .seg button.on:hover { background: var(--ink); color: var(--on-ink); }
+
+  /* style controls */
+  .field { display: flex; align-items: center; gap: 6px; color: var(--muted); padding: 0 4px; }
+  input[type=number] {
+    width: 54px; height: 28px; padding: 0 4px 0 8px; font: 500 12px "IBM Plex Mono", ui-monospace, monospace;
+    color: var(--ink); background: var(--desk); border: 1px solid var(--line-strong); border-radius: 5px;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) input[type=number] { background: var(--desk); } }
+  input[type=color] {
+    width: 30px; height: 30px; padding: 6px; cursor: pointer; background: transparent;
+    border: 1px solid transparent; border-radius: 5px;
+  }
+  input[type=color]:hover:not(:disabled) { background: var(--hover); }
+  input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  input[type=color]::-webkit-color-swatch { border: 1px solid var(--line-strong); border-radius: 3px; }
+  input[type=color]::-moz-color-swatch { border: 1px solid var(--line-strong); border-radius: 3px; }
+  input:disabled { opacity: .45; cursor: default; }
+  #fileInput { display: none; }
+
+  .spacer { flex: 1; }
+  button.primary { background: var(--ink); color: var(--on-ink); padding: 0 14px; }
+  button.primary:hover:not(:disabled) { background: var(--ink); opacity: .88; }
+  button.primary:disabled { background: var(--line-strong); color: var(--chrome); opacity: 1; }
+
+  @media (max-width: 1080px) { .lbl { display: none; } .seg button { padding: 0 9px; } }
+  @media (max-width: 600px) { .sep { display: none; } header h1 { display: none; } }
+
+  /* ---------- workspace ---------- */
+  main { flex: 1; overflow: auto; position: relative; }
+
+  #drop {
+    width: min(520px, calc(100% - 32px)); margin: 12vh auto 40px; padding: 40px 32px; text-align: center;
+    background: var(--chrome); border: 1px dashed var(--line-strong); border-radius: 8px;
+  }
+  #drop.drag { border: 1px solid var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  #drop .sheet { width: 44px; height: 56px; margin: 0 auto 18px; color: var(--muted); }
+  #drop h2 { font-size: 16px; font-weight: 600; margin: 0 0 6px; }
+  #drop p { color: var(--muted); margin: 0 0 20px; }
+  #drop .btn { background: var(--ink); color: var(--on-ink); padding: 0 14px; height: 32px; }
+  #drop .btn:hover { opacity: .88; }
+  #drop .fine { margin: 18px 0 0; font-size: 12px; }
+
+  #pages { padding: 28px 16px 48px; display: flex; flex-direction: column; align-items: center; gap: 36px; }
+  .page { position: relative; background: #fff; box-shadow: var(--page-shadow); }
+  .page canvas { display: block; }
+  .layer { position: absolute; inset: 0; }
+  body.add .layer { cursor: crosshair; }
+  .pnum {
+    position: absolute; bottom: -24px; left: 0; right: 0; text-align: center;
+    font: 11px "IBM Plex Mono", ui-monospace, monospace; color: var(--muted);
+  }
+
+  /* ---------- status bar ---------- */
+  footer {
+    flex: none; display: flex; align-items: center; gap: 16px; height: 26px; padding: 0 12px;
+    background: var(--chrome); border-top: 1px solid var(--line); color: var(--muted);
+    font: 11px "IBM Plex Mono", ui-monospace, monospace; white-space: nowrap; overflow: hidden;
+  }
+  footer .status { overflow: hidden; text-overflow: ellipsis; }
+  footer .hint { margin-left: auto; }
+  @media (max-width: 600px) { footer .hint { display: none; } }
+
+  /* Text boxes sit over the rendered page. Untouched ones are invisible so the original shows through. */
+  .box {
+    position: absolute; white-space: pre; outline: none; color: transparent; background: transparent;
+    cursor: text; padding: 0; margin: 0;
+  }
+  .box:hover { box-shadow: 0 0 0 1px rgba(212, 70, 27, .55); }
+  .box:focus, .box.dirty { color: var(--c, #000); }
+  .box:focus { background: #fff; box-shadow: 0 0 0 1.5px #d4461b; }
+  .box.new:not(:focus) { background: transparent; }
+  .box.new:empty::before { content: "Type here"; color: #a8a49c; }
+  body.move .box { cursor: move; box-shadow: 0 0 0 1px rgba(212, 70, 27, .3); user-select: none; touch-action: none; }
+  body.move .box:hover, body.move .box.sel { box-shadow: 0 0 0 1.5px #d4461b; }
+  body.move .box.new { background: transparent; }
+  /* Hides the original text once it has been edited or moved away */
+  .cover { position: absolute; background: #fff; display: none; pointer-events: none; }
+  .cover.on { display: block; }
+  /* Edited text drawn in the PDF's own font; the editable box underneath goes transparent */
+  .preview { position: absolute; white-space: pre; pointer-events: none; }
+  .box.pv:not(:focus) { color: transparent; }
+  .box:focus + .preview { visibility: hidden; }
+  /* Alignment guides shown while dragging */
+  .guide { position: absolute; display: none; pointer-events: none; background: #d4461b; z-index: 5; }
+  .guide.v { top: 0; bottom: 0; width: 1px; }
+  .guide.h { left: 0; right: 0; height: 1px; }
+
+  #toast {
+    position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 20;
+    background: var(--ink); color: var(--on-ink); padding: 8px 14px; border-radius: 5px; font-size: 12px;
+    opacity: 0; transition: opacity .15s; pointer-events: none; max-width: calc(100vw - 32px);
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>PDF Editor</h1>
+  <label class="btn" for="fileInput" title="Open a PDF">
+    <svg class="i" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="lbl">Open</span>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf">
+
+  <div class="sep"></div>
+  <div class="group">
+    <button id="undo" class="icon" disabled title="Undo (Ctrl+Z)"><svg class="i" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button id="redo" class="icon" disabled title="Redo (Ctrl+Y)"><svg class="i" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+  </div>
+
+  <div class="sep"></div>
+  <div class="seg" role="group" aria-label="Mode">
+    <button id="modeEdit" class="on" title="Click existing text to change it"><span>Edit</span></button>
+    <button id="modeAdd" title="Click anywhere on a page to add new text"><span>Add text</span></button>
+    <button id="modeMove" title="Drag text to move it (arrow keys nudge the selected text)"><span>Move</span></button>
+  </div>
+
+  <div class="sep"></div>
+  <div class="group">
+    <label class="field" for="size">Size <input type="number" id="size" min="4" max="200" step="0.5" value="12" disabled></label>
+    <button id="bold" class="icon" disabled title="Bold"><svg class="i" viewBox="0 0 24 24" style="stroke-width:2.4"><path d="M7 5h6a3.5 3.5 0 0 1 0 7H7z"/><path d="M7 12h7a3.5 3.5 0 0 1 0 7H7z"/></svg></button>
+    <input type="color" id="color" value="#000000" disabled title="Text colour">
+  </div>
+
+  <div class="sep"></div>
+  <div class="group">
+    <button id="dup" disabled title="Copy the selected text with the same style (Ctrl+D)"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span class="lbl">Duplicate</span></button>
+    <button id="del" disabled title="Remove the selected text"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg><span class="lbl">Delete</span></button>
+  </div>
+
+  <div class="spacer"></div>
+  <button id="download" class="primary" disabled title="Save the edited PDF">Download PDF</button>
+</header>
+
+<main>
+  <div id="drop">
+    <svg class="sheet" viewBox="0 0 44 56" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 2h28l12 12v40H2z"/><path d="M30 2v12h12"/><path d="M10 26h24M10 33h24M10 40h16"/></svg>
+    <h2>Open a PDF</h2>
+    <p>Drag a file onto this window, or choose one.</p>
+    <label class="btn" for="fileInput">Choose file…</label>
+    <p class="fine">The file stays on your computer. Nothing is uploaded.</p>
+  </div>
+  <div id="pages"></div>
+</main>
+
+<footer>
+  <span class="status" id="status">No document</span>
+  <span class="hint" id="hint">Click text to edit it</span>
+</footer>
+<div id="toast"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const { PDFDocument, StandardFonts, rgb } = PDFLib;
+
+const $ = id => document.getElementById(id);
+const pagesEl = $('pages'), dropEl = $('drop');
+const state = { bytes: null, name: 'document.pdf', pages: [], boxes: [], mode: 'edit', selected: null, undo: [], redo: [], noMerge: false };
+
+// ---------- loading ----------
+$('fileInput').addEventListener('change', e => { if (e.target.files[0]) loadPdf(e.target.files[0]); e.target.value = ''; });
+['dragover', 'dragenter'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); dropEl.classList.add('drag'); }));
+['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); dropEl.classList.remove('drag'); }));
+document.addEventListener('drop', e => {
+  const f = [...e.dataTransfer.files].find(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  if (f) loadPdf(f); else toast('Please drop a PDF file');
+});
+
+async function loadPdf(file) {
+  status('Loading…');
+  try {
+    state.bytes = new Uint8Array(await file.arrayBuffer());
+    state.name = file.name;
+    state.boxes = []; state.pages = []; select(null);
+    state.undo = []; state.redo = []; updateUndoButtons();
+    pagesEl.innerHTML = '';
+    dropEl.style.display = 'none';
+
+    state.fonts = {};
+    // fontExtraProperties keeps each font's character map so edits can reuse the PDF's own fonts
+    const doc = await pdfjsLib.getDocument({ data: state.bytes.slice(), fontExtraProperties: true }).promise;
+    const avail = Math.min(pagesEl.clientWidth - 32, 1000);
+    const dpr = window.devicePixelRatio || 1;
+    let textCount = 0;
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      status(`Rendering page ${i} of ${doc.numPages}…`);
+      const page = await doc.getPage(i);
+      const scale = avail / page.getViewport({ scale: 1 }).width;
+      const vp = page.getViewport({ scale });
+
+      const wrap = document.createElement('div');
+      wrap.className = 'page';
+      wrap.style.width = vp.width + 'px';
+      wrap.style.height = vp.height + 'px';
+      wrap.innerHTML = `<span class="pnum">${i} / ${doc.numPages}</span>`;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(vp.width * dpr);
+      canvas.height = Math.floor(vp.height * dpr);
+      canvas.style.width = vp.width + 'px';
+      canvas.style.height = vp.height + 'px';
+      const layer = document.createElement('div');
+      layer.className = 'layer';
+      layer.dataset.page = i - 1;
+      wrap.append(canvas, layer);
+      pagesEl.append(wrap);
+
+      await page.render({
+        canvasContext: canvas.getContext('2d'), viewport: vp,
+        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
+      }).promise;
+      state.pages.push({ vp, scale, layer });
+      const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+
+      const tc = await page.getTextContent();
+      for (const item of tc.items) {
+        if (!item.str || !item.str.trim()) continue;
+        const tx = pdfjsLib.Util.transform(vp.transform, item.transform);
+        if (Math.abs(tx[1]) > 0.01 || Math.abs(tx[2]) > 0.01) continue; // skip rotated text
+        const fontPx = Math.hypot(tx[2], tx[3]);
+        if (fontPx < 1) continue;
+        const info = fontInfo(page, item.fontName, tc.styles[item.fontName]);
+        if (!(item.fontName in state.fonts)) {
+          let fo = null;
+          try { fo = page.commonObjs.get(item.fontName); } catch (_) {}
+          state.fonts[item.fontName] = prepFont(fo);
+        }
+        const width = item.width * scale;
+        const { ink: color, bg } = inkColor(pixels, tx[4] * dpr, (tx[5] - fontPx * 0.8) * dpr, (tx[4] + width) * dpr, (tx[5] + fontPx * 0.1) * dpr);
+        addBox({
+          page: i - 1, left: tx[4], baseline: tx[5], fontPx, text: item.str, font: item.fontName,
+          family: info.family, bold: info.bold, italic: info.italic, color,
+          orig: { left: tx[4], top: tx[5] - fontPx, width, height: fontPx * 1.25, bg },
+        });
+        textCount++;
+      }
+    }
+    // Strip encryption up front so the exported file opens everywhere
+    state.saveError = null;
+    try {
+      const raw = await PDFDocument.load(state.bytes, { ignoreEncryption: true });
+      if (await removeEncryption(raw, PDFLib)) state.bytes = await raw.save();
+    } catch (err) {
+      state.saveError = err.message;
+      toast(err.message + " You can view it, but downloading edits won't work.", 6000);
+    }
+    $('download').disabled = false;
+    status(`${doc.numPages} page${doc.numPages > 1 ? 's' : ''} · ${file.name}`);
+    if (!textCount) toast('No editable text found (this may be a scanned PDF). You can still add new text.', 5000);
+  } catch (err) {
+    console.error(err);
+    status('No document');
+    dropEl.style.display = '';
+    toast('Could not open this PDF: ' + err.message, 5000);
+  }
+}
+
+// Text colour isn't in pdf.js's text content, so read it off the rendered page: within the text's
+// rectangle, the pixels furthest from the background colour (taken from a ring just outside it) are the ink.
+function inkColor(img, x0, y0, x1, y1) {
+  const W = img.width, H = img.height, d = img.data;
+  x0 = Math.max(0, Math.floor(x0)); y0 = Math.max(0, Math.floor(y0));
+  x1 = Math.min(W, Math.ceil(x1)); y1 = Math.min(H, Math.ceil(y1));
+  if (x1 - x0 < 1 || y1 - y0 < 1) return { ink: '#000000', bg: '#ffffff' };
+  const step = Math.max(1, Math.floor(Math.sqrt((x1 - x0) * (y1 - y0) / 40000)));
+  const quant = i => (d[i] >> 4) << 8 | (d[i + 1] >> 4) << 4 | (d[i + 2] >> 4);
+  const counts = new Map(), px = [];
+  const count = (x, y) => {
+    if (x < 0 || y < 0 || x >= W || y >= H) return;
+    const i = (y * W + x) * 4, q = quant(i);
+    const c = counts.get(q) || counts.set(q, [0, 0, 0, 0]).get(q);
+    c[0]++; c[1] += d[i]; c[2] += d[i + 1]; c[3] += d[i + 2];
+  };
+  const pad = 3;
+  for (let x = x0 - pad; x < x1 + pad; x++) { count(x, y0 - pad); count(x, y1 + pad); }
+  for (let y = y0 - pad; y < y1 + pad; y++) { count(x0 - pad, y); count(x1 + pad, y); }
+  const ring = counts.size;
+  for (let y = y0; y < y1; y += step) for (let x = x0; x < x1; x += step) {
+    const i = (y * W + x) * 4;
+    px.push(d[i], d[i + 1], d[i + 2]);
+    if (!ring) count(x, y); // rect touches every page edge: fall back to the inside
+  }
+  let top = null; // most common colour bucket, averaged
+  for (const c of counts.values()) if (!top || c[0] > top[0]) top = c;
+  const [n0, sr, sg, sb] = top || [1, 255, 255, 255];
+  const br = sr / n0, bgG = sg / n0, bb = sb / n0;
+  const dist = new Float32Array(px.length / 3);
+  let max = 0;
+  for (let k = 0; k < dist.length; k++) {
+    dist[k] = Math.hypot(px[3 * k] - br, px[3 * k + 1] - bgG, px[3 * k + 2] - bb);
+    if (dist[k] > max) max = dist[k];
+  }
+  const hex = v => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0');
+  const bg = '#' + hex(br) + hex(bgG) + hex(bb);
+  if (max < 40) return { ink: '#000000', bg };
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let k = 0; k < dist.length; k++) if (dist[k] >= max * 0.85) { r += px[3 * k]; g += px[3 * k + 1]; b += px[3 * k + 2]; n++; }
+  r /= n; g /= n; b /= n;
+  if (Math.max(r, g, b) < 25 && Math.max(r, g, b) - Math.min(r, g, b) < 12) r = g = b = 0; // anti-aliased black
+  return { ink: '#' + hex(r) + hex(g) + hex(b), bg };
+}
+
+// The PDF's embedded fonts are usually subsets, and pdf.js re-maps their glyphs to private-use
+// code points. Build char -> glyph-code lookups so edited text can be drawn in the original font
+// (on screen and in the export); characters missing from the subset fall back to a standard font.
+function prepFont(fo) {
+  if (!fo || fo.missingFile || fo.isType3Font || !fo.toUnicode) return null;
+  const tu = fo.toUnicode, toFC = fo.toFontChar || [], rev = new Map();
+  const add = (code, u) => {
+    if (typeof u !== 'string' || [...u].length !== 1) return;
+    if (toFC[code] === undefined && u !== ' ') return; // no glyph for it in the subset
+    if (!rev.has(u)) rev.set(u, +code);
+  };
+  if (tu.firstChar !== undefined && !tu._map) for (let c = tu.firstChar; c <= tu.lastChar; c++) add(c, String.fromCharCode(c));
+  else for (const [code, u] of Object.entries(tu._map || tu)) add(code, u);
+  if (!rev.size) return null;
+  return { name: fo.name, loadedName: fo.loadedName, composite: !!fo.composite, rev, toFC, widths: fo.widths || {}, dw: fo.defaultWidth || 0 };
+}
+
+// Original font is kept unless the user changed the weight
+const origFont = box => box.font && state.fonts[box.font] && box.bold === box.origBold ? state.fonts[box.font] : null;
+
+function fontInfo(page, fontName, style) {
+  let name = '';
+  try { name = page.commonObjs.get(fontName)?.name || ''; } catch (_) {}
+  const fam = (style && style.fontFamily) || '';
+  const all = (name + ' ' + fam).toLowerCase();
+  let family = 'sans';
+  if (/mono|courier|consol/.test(all)) family = 'mono';
+  else if (/serif/.test(fam) && !/sans/.test(fam) || /times|georgia|garamond|cambria|book/.test(all)) family = 'serif';
+  return { family, bold: /bold|black|heavy|semibold/.test(all), italic: /italic|oblique/.test(all) };
+}
+
+// ---------- text boxes ----------
+const CSS_FAMILY = { sans: 'Helvetica, Arial, sans-serif', serif: '"Times New Roman", Times, serif', mono: '"Courier New", Courier, monospace' };
+
+function addBox(b) {
+  const box = { ...b, origText: b.text, origBold: b.origBold ?? b.bold, dirty: false, deleted: false };
+  const el = document.createElement('div');
+  el.className = 'box' + (b.orig ? '' : ' new');
+  el.spellcheck = false;
+  el.contentEditable = 'plaintext-only';
+  if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
+  el.textContent = b.text;
+  box.el = el;
+  el._box = box;
+  if (b.orig) {
+    const o = b.orig, cover = document.createElement('div');
+    cover.className = 'cover';
+    Object.assign(cover.style, { background: o.bg || '#fff', left: o.left - 1 + 'px', top: o.top - 1 + 'px', width: o.width + 2 + 'px', height: o.height + 2 + 'px' });
+    state.pages[b.page].layer.append(cover);
+    box.cover = cover;
+  }
+  styleBox(box);
+  box.last = b.orig ? snap(box) : null; // new boxes enter the history on their first edit
+
+  el.addEventListener('focus', () => select(box));
+  el.addEventListener('input', () => { box.text = readText(el); markDirty(box); renderPreview(box); commit(box, 'text'); });
+  el.addEventListener('beforeinput', e => {
+    if (e.inputType === 'historyUndo') { e.preventDefault(); undo(); }
+    if (e.inputType === 'historyRedo') { e.preventDefault(); redo(); }
+  });
+  el.addEventListener('paste', e => {
+    e.preventDefault();
+    document.execCommand('insertText', false, e.clipboardData.getData('text/plain'));
+  });
+  el.addEventListener('blur', () => {
+    if (!box.orig && !box.deleted && !readText(el).trim()) removeBox(box); // drop empty new boxes
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Escape') el.blur(); });
+
+  state.pages[b.page].layer.append(el);
+  state.boxes.push(box);
+  return box;
+}
+
+function styleBox(box) {
+  const s = box.el.style;
+  s.left = box.left + 'px';
+  s.top = (box.baseline - box.fontPx) + 'px';
+  s.fontSize = box.fontPx + 'px';
+  s.lineHeight = (box.fontPx * 1.25) + 'px';
+  s.fontFamily = CSS_FAMILY[box.family];
+  s.fontWeight = box.bold ? '700' : '400';
+  s.fontStyle = box.italic ? 'italic' : 'normal';
+  s.minWidth = (box.orig ? box.orig.width : 8) + 'px';
+  s.minHeight = (box.fontPx * 1.25) + 'px';
+  s.setProperty('--c', box.color);
+  renderPreview(box);
+}
+
+// When not being typed in, edited text is shown in the PDF's own font (as it will be exported)
+function renderPreview(box) {
+  const f = origFont(box), show = !!(f && box.dirty && box.text && box.el.isConnected);
+  box.el.classList.toggle('pv', show);
+  if (!show) { if (box.preview) box.preview.style.display = 'none'; return; }
+  if (!box.preview) {
+    box.preview = document.createElement('div');
+    box.preview.className = 'preview';
+    box.el.after(box.preview);
+  }
+  const p = box.preview, s = box.el.style;
+  Object.assign(p.style, {
+    display: '', left: s.left, top: s.top, fontSize: s.fontSize, lineHeight: s.lineHeight, color: box.color,
+  });
+  p.textContent = '';
+  let run = null;
+  for (const ch of box.text) {
+    const code = f.rev.get(ch), has = code !== undefined && (ch === ' ' || f.toFC[code] !== undefined);
+    if (!run || run.has !== has) {
+      run = { has, el: document.createElement('span') };
+      run.el.style.fontFamily = has ? `"${f.loadedName}", ${s.fontFamily}` : s.fontFamily;
+      if (!has) { run.el.style.fontWeight = s.fontWeight; run.el.style.fontStyle = s.fontStyle; }
+      p.append(run.el);
+    }
+    run.el.textContent += has && ch !== ' ' ? String.fromCodePoint(f.toFC[code]) : ch;
+  }
+}
+
+const readText = el => el.innerText.replace(/\n+$/, '');
+
+function markDirty(box) {
+  box.dirty = true;
+  box.el.classList.add('dirty');
+  if (box.cover) box.cover.classList.add('on');
+  updateStatusCount();
+}
+
+function removeBox(box) {
+  if (box.orig) { // original text: blank it out (the export will white it out)
+    box.text = ''; box.el.textContent = ''; markDirty(box);
+  } else {
+    box.deleted = true; box.el.remove(); box.preview?.remove(); box.preview = null;
+    state.boxes = state.boxes.filter(b => b !== box);
+  }
+  if (state.selected === box) select(null);
+  commit(box, null);
+}
+
+// ---------- undo / redo ----------
+// Each history entry stores a box's state before and after one change (null = box doesn't exist).
+const snap = box => box.deleted ? null
+  : { left: box.left, baseline: box.baseline, fontPx: box.fontPx, text: box.text, bold: box.bold, color: box.color, dirty: box.dirty };
+
+// Rapid changes of the same kind to the same box (typing, size spinner, nudges) merge into one step.
+function commit(box, key) {
+  const before = box.last, after = snap(box);
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
+  const last = state.undo[state.undo.length - 1], now = Date.now();
+  if (key && !state.noMerge && last && last.box === box && last.key === key && now - last.t < 1000) {
+    last.after = after; last.t = now;
+  } else {
+    state.undo.push({ box, before, after, key, t: now });
+  }
+  state.noMerge = false;
+  state.redo.length = 0;
+  box.last = after;
+  updateUndoButtons();
+}
+
+function restore(box, s) {
+  if (!s) {
+    box.deleted = true; box.el.remove(); box.preview?.remove(); box.preview = null;
+    state.boxes = state.boxes.filter(b => b !== box);
+    if (state.selected === box) select(null);
+  } else {
+    if (box.deleted) { box.deleted = false; state.pages[box.page].layer.append(box.el); state.boxes.push(box); }
+    Object.assign(box, s);
+    if (readText(box.el) !== box.text) {
+      box.el.textContent = box.text;
+      if (document.activeElement === box.el) caretToEnd(box.el);
+    }
+    box.el.classList.toggle('dirty', box.dirty);
+    if (box.cover) box.cover.classList.toggle('on', box.dirty);
+    styleBox(box);
+    if (state.selected === box) select(box);
+  }
+  box.last = s;
+  updateStatusCount();
+}
+
+function undo() {
+  const h = state.undo.pop();
+  if (!h) return toast('Nothing to undo');
+  restore(h.box, h.before);
+  state.redo.push(h); state.noMerge = true; updateUndoButtons();
+}
+function redo() {
+  const h = state.redo.pop();
+  if (!h) return toast('Nothing to redo');
+  restore(h.box, h.after);
+  state.undo.push(h); state.noMerge = true; updateUndoButtons();
+}
+function updateUndoButtons() {
+  $('undo').disabled = !state.undo.length;
+  $('redo').disabled = !state.redo.length;
+}
+function caretToEnd(el) {
+  const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+}
+
+$('undo').addEventListener('mousedown', e => e.preventDefault());
+$('redo').addEventListener('mousedown', e => e.preventDefault());
+$('undo').addEventListener('click', undo);
+$('redo').addEventListener('click', redo);
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+}, true);
+
+// ---------- toolbar ----------
+function select(box) {
+  if (state.selected) state.selected.el.classList.remove('sel');
+  state.selected = box;
+  if (box) box.el.classList.add('sel');
+  const on = !!box;
+  ['size', 'bold', 'color', 'dup', 'del'].forEach(id => $(id).disabled = !on);
+  if (on) {
+    const scale = state.pages[box.page].scale;
+    $('size').value = Math.round(box.fontPx / scale * 2) / 2;
+    $('bold').classList.toggle('on', box.bold);
+    $('color').value = box.color;
+  }
+}
+
+// Keep focus in the text when clicking toolbar buttons
+['bold', 'dup', 'del'].forEach(id => $(id).addEventListener('mousedown', e => e.preventDefault()));
+
+$('size').addEventListener('input', () => {
+  const box = state.selected, v = parseFloat($('size').value);
+  if (!box || !(v > 0)) return;
+  box.fontPx = v * state.pages[box.page].scale;
+  styleBox(box); markDirty(box); commit(box, 'size');
+});
+$('bold').addEventListener('click', () => {
+  const box = state.selected; if (!box) return;
+  box.bold = !box.bold; $('bold').classList.toggle('on', box.bold);
+  styleBox(box); markDirty(box); commit(box, null);
+});
+$('color').addEventListener('input', () => {
+  const box = state.selected; if (!box) return;
+  box.color = $('color').value; styleBox(box); markDirty(box); commit(box, 'color');
+});
+$('del').addEventListener('click', () => { if (state.selected) removeBox(state.selected); });
+
+function setMode(m) {
+  state.mode = m;
+  $('modeEdit').classList.toggle('on', m === 'edit');
+  $('modeAdd').classList.toggle('on', m === 'add');
+  $('modeMove').classList.toggle('on', m === 'move');
+  document.body.classList.toggle('add', m === 'add');
+  document.body.classList.toggle('move', m === 'move');
+  $('hint').textContent = {
+    edit: 'Click text to edit it',
+    add: 'Click on a page to add text',
+    move: 'Drag to move · Shift locks direction · Alt turns off snapping',
+  }[m];
+  if (m === 'move' && document.activeElement?.classList.contains('box')) document.activeElement.blur();
+}
+$('modeEdit').addEventListener('click', () => setMode('edit'));
+$('modeAdd').addEventListener('click', () => setMode('add'));
+$('modeMove').addEventListener('click', () => setMode('move'));
+
+// ---------- moving & aligning ----------
+const SNAP_PX = 6;
+
+function guide(layer, dir) {
+  const key = '_guide' + dir;
+  if (!layer[key]) {
+    layer[key] = document.createElement('div');
+    layer[key].className = 'guide ' + dir;
+    layer.append(layer[key]);
+  }
+  return layer[key];
+}
+function showGuides(layer, x, y) {
+  const v = guide(layer, 'v'), h = guide(layer, 'h');
+  v.style.display = x == null ? 'none' : 'block'; if (x != null) v.style.left = x + 'px';
+  h.style.display = y == null ? 'none' : 'block'; if (y != null) h.style.top = y + 'px';
+}
+
+// Closest target within SNAP_PX of any of the given edges -> { shift, at } or null
+function nearest(targets, edges) {
+  let best = null;
+  for (const t of targets) for (const e of edges) {
+    const d = t - e;
+    if (Math.abs(d) <= SNAP_PX && (!best || Math.abs(d) < Math.abs(best.shift))) best = { shift: d, at: t };
+  }
+  return best;
+}
+
+// Drag a text box: snaps its left/right edge and baseline to other text on the page.
+// Shift = move in one direction only, Alt = no snapping.
+pagesEl.addEventListener('pointerdown', e => {
+  if (state.mode !== 'move' || !e.target.classList.contains('box')) return;
+  e.preventDefault(); // don't start editing
+  const box = e.target._box, el = box.el;
+  select(box);
+  const layer = state.pages[box.page].layer;
+  const xs = [], ys = [];
+  for (const b of state.boxes) {
+    if (b === box || b.page !== box.page || !b.text.trim()) continue;
+    xs.push(b.left, b.left + b.el.offsetWidth);
+    ys.push(b.baseline);
+  }
+  xs.push(layer.clientWidth / 2); // page centre
+  const startX = e.clientX, startY = e.clientY, left0 = box.left, base0 = box.baseline;
+  let moved = false;
+  el.setPointerCapture(e.pointerId);
+
+  const onMove = ev => {
+    let dx = ev.clientX - startX, dy = ev.clientY - startY;
+    if (!moved && Math.hypot(dx, dy) < 2) return;
+    moved = true;
+    if (ev.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
+    const w = el.offsetWidth;
+    let L = left0 + dx, B = base0 + dy, gx = null, gy = null;
+    if (!ev.altKey) {
+      if (dx !== 0 || !ev.shiftKey) {
+        const sx = nearest(xs, [L, L + w, L + w / 2]);
+        if (sx) { L += sx.shift; gx = sx.at; }
+      }
+      if (dy !== 0 || !ev.shiftKey) {
+        const sy = nearest(ys, [B]);
+        if (sy) { B += sy.shift; gy = sy.at; }
+      }
+    }
+    box.left = Math.max(0, Math.min(layer.clientWidth - w, L));
+    box.baseline = Math.max(box.fontPx, Math.min(layer.clientHeight, B));
+    styleBox(box);
+    showGuides(layer, gx, gy);
+  };
+  const onUp = () => {
+    el.removeEventListener('pointermove', onMove);
+    el.removeEventListener('pointerup', onUp);
+    el.removeEventListener('pointercancel', onUp);
+    showGuides(layer, null, null);
+    if (moved) { markDirty(box); commit(box, null); }
+  };
+  el.addEventListener('pointermove', onMove);
+  el.addEventListener('pointerup', onUp);
+  el.addEventListener('pointercancel', onUp);
+});
+
+// Arrow keys nudge the selected box in move mode (Shift = 10px)
+document.addEventListener('keydown', e => {
+  const box = state.selected;
+  if (state.mode !== 'move' || !box || !e.key.startsWith('Arrow')) return;
+  e.preventDefault();
+  const d = e.shiftKey ? 10 : 1;
+  if (e.key === 'ArrowLeft') box.left -= d;
+  if (e.key === 'ArrowRight') box.left += d;
+  if (e.key === 'ArrowUp') box.baseline -= d;
+  if (e.key === 'ArrowDown') box.baseline += d;
+  styleBox(box); markDirty(box); commit(box, 'nudge');
+});
+
+// Add-text mode: click empty space on a page to drop a new text box
+pagesEl.addEventListener('mousedown', e => {
+  if (state.mode !== 'add' || !e.target.classList.contains('layer')) return;
+  e.preventDefault();
+  const pageIdx = +e.target.dataset.page;
+  const p = state.pages[pageIdx];
+  const r = e.target.getBoundingClientRect();
+  // New text always starts plain (12pt, black, regular); use Duplicate to copy an existing style
+  const fontPx = 12 * p.scale;
+  const box = addBox({
+    page: pageIdx, left: e.clientX - r.left, baseline: e.clientY - r.top + fontPx * 0.6, fontPx, text: '', orig: null,
+    family: 'sans', bold: false, italic: false, color: '#000000',
+  });
+  markDirty(box);
+  setTimeout(() => box.el.focus(), 0);
+});
+
+// Duplicate: copy the selected text with exactly the same font, size and colour, just below it
+function duplicate() {
+  const src = state.selected;
+  if (!src || src.deleted || !src.text.trim()) return toast('Select some text to duplicate');
+  const layer = state.pages[src.page].layer;
+  let baseline = src.baseline + src.fontPx * 1.4;
+  if (baseline > layer.clientHeight) baseline = src.baseline - src.fontPx * 1.4;
+  const box = addBox({
+    page: src.page, left: src.left, baseline, fontPx: src.fontPx, text: src.text, orig: null,
+    font: src.font, family: src.family, bold: src.bold, origBold: src.origBold, italic: src.italic, color: src.color,
+  });
+  markDirty(box);
+  styleBox(box);
+  commit(box, null);
+  if (document.activeElement === src.el) src.el.blur();
+  select(box);
+  if (state.mode === 'edit') { // ready to type over the copy
+    box.el.focus();
+    const rg = document.createRange(); rg.selectNodeContents(box.el);
+    getSelection().removeAllRanges(); getSelection().addRange(rg);
+  }
+  toast(state.mode === 'move' ? 'Copied — drag it into place' : 'Copied — type to change it, or use Move to place it');
+}
+$('dup').addEventListener('click', duplicate);
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicate(); }
+}, true);
+
+// ---------- decryption ----------
+// Many PDFs (bank statements, payslips, exported docs) are encrypted with an empty user password:
+// they open without a password but every string and stream is RC4/AES encrypted. pdf-lib can't
+// decrypt, so we do it here (standard security handler, revisions 2-4) before editing.
+const PDF_PAD = [0x28,0xBF,0x4E,0x5E,0x4E,0x75,0x8A,0x41,0x64,0x00,0x4E,0x56,0xFF,0xFA,0x01,0x08,
+                 0x2E,0x2E,0x00,0xB6,0xD0,0x68,0x3E,0x80,0x2F,0x0C,0xA9,0xFE,0x64,0x53,0x69,0x7A];
+
+function md5(bytes) {
+  const K = new Int32Array(64), S = [7, 12, 17, 22, 5, 9, 14, 20, 4, 11, 16, 23, 6, 10, 15, 21];
+  for (let i = 0; i < 64; i++) K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) | 0;
+  const len = bytes.length, nBlocks = ((len + 8) >> 6) + 1, w = new Int32Array(nBlocks * 16);
+  for (let i = 0; i < len; i++) w[i >> 2] |= bytes[i] << ((i % 4) * 8);
+  w[len >> 2] |= 0x80 << ((len % 4) * 8);
+  w[nBlocks * 16 - 2] = len * 8;
+  w[nBlocks * 16 - 1] = Math.floor(len / 0x20000000);
+  let a0 = 0x67452301, b0 = 0xefcdab89 | 0, c0 = 0x98badcfe | 0, d0 = 0x10325476;
+  for (let blk = 0; blk < w.length; blk += 16) {
+    let A = a0, B = b0, C = c0, D = d0;
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16) { F = (B & C) | (~B & D); g = i; }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
+      else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
+      else { F = C ^ (B | ~D); g = (7 * i) % 16; }
+      const s = S[(i >> 4) * 4 + (i % 4)];
+      F = (F + A + K[i] + w[blk + g]) | 0;
+      A = D; D = C; C = B; B = (B + ((F << s) | (F >>> (32 - s)))) | 0;
+    }
+    a0 = (a0 + A) | 0; b0 = (b0 + B) | 0; c0 = (c0 + C) | 0; d0 = (d0 + D) | 0;
+  }
+  const out = new Uint8Array(16), v = [a0, b0, c0, d0];
+  for (let i = 0; i < 16; i++) out[i] = (v[i >> 2] >>> ((i % 4) * 8)) & 255;
+  return out;
+}
+
+function rc4(key, data) {
+  const s = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) s[i] = i;
+  for (let i = 0, j = 0; i < 256; i++) {
+    j = (j + s[i] + key[i % key.length]) & 255;
+    [s[i], s[j]] = [s[j], s[i]];
+  }
+  const out = new Uint8Array(data.length);
+  for (let k = 0, i = 0, j = 0; k < data.length; k++) {
+    i = (i + 1) & 255; j = (j + s[i]) & 255;
+    [s[i], s[j]] = [s[j], s[i]];
+    out[k] = data[k] ^ s[(s[i] + s[j]) & 255];
+  }
+  return out;
+}
+
+const concatBytes = (...parts) => {
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+};
+
+async function aesDecrypt(key, data) {
+  if (data.length < 32 || data.length % 16) return data.slice(16);
+  const k = await crypto.subtle.importKey('raw', key, 'AES-CBC', false, ['decrypt']);
+  try {
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv: data.slice(0, 16) }, k, data.slice(16)));
+  } catch (_) { return data; }
+}
+
+async function removeEncryption(pdf, L) {
+  const ctx = pdf.context, tr = ctx.trailerInfo;
+  if (!tr.Encrypt) return false;
+  const encRef = tr.Encrypt, enc = ctx.lookup(encRef, L.PDFDict);
+  const get = k => enc.lookup(L.PDFName.of(k));
+  const num = (k, d) => { const v = get(k); return v instanceof L.PDFNumber ? v.asNumber() : d; };
+  const bytesOf = o => (o instanceof L.PDFString || o instanceof L.PDFHexString) ? o.asBytes() : new Uint8Array();
+
+  if (get('Filter')?.asString?.() !== '/Standard') throw new Error('This PDF uses an unsupported protection method.');
+  const V = num('V', 0), R = num('R', 2);
+  if (V >= 5) throw new Error('This PDF uses AES-256 protection, which this editor cannot remove yet.');
+
+  let method = 'RC4', keyLen = V === 1 ? 5 : num('Length', 40) / 8;
+  if (V === 4) {
+    const stmF = get('StmF')?.asString?.() || '/Identity';
+    if (stmF === '/Identity') method = 'none';
+    else {
+      const cf = get('CF')?.lookup(L.PDFName.of(stmF.slice(1)));
+      const cfm = cf?.lookup(L.PDFName.of('CFM'))?.asString?.();
+      if (cfm === '/AESV2') method = 'AES';
+      else if (cfm === '/None') method = 'none';
+      const cl = cf?.lookup(L.PDFName.of('Length'));
+      keyLen = cl instanceof L.PDFNumber ? (cl.asNumber() > 32 ? cl.asNumber() / 8 : cl.asNumber()) : 16;
+    }
+  }
+  const encryptMetadata = get('EncryptMetadata') !== L.PDFBool.False;
+
+  // Algorithm 2: file key from the empty user password
+  const O = bytesOf(get('O')).slice(0, 32), U = bytesOf(get('U'));
+  const P = num('P', 0), pBytes = new Uint8Array([P & 255, (P >> 8) & 255, (P >> 16) & 255, (P >>> 24) & 255]);
+  const idArr = tr.ID ? ctx.lookup(tr.ID) : null;
+  const id0 = idArr instanceof L.PDFArray ? bytesOf(idArr.lookup(0)) : new Uint8Array();
+  let h = md5(concatBytes(new Uint8Array(PDF_PAD), O, pBytes, id0,
+    R >= 4 && !encryptMetadata ? new Uint8Array([255, 255, 255, 255]) : new Uint8Array()));
+  if (R >= 3) for (let i = 0; i < 50; i++) h = md5(h.slice(0, keyLen));
+  const fileKey = h.slice(0, keyLen);
+
+  // Check the key against /U: if it doesn't match, the file needs a real password to open
+  let check;
+  if (R === 2) check = rc4(fileKey, new Uint8Array(PDF_PAD));
+  else {
+    check = rc4(fileKey, md5(concatBytes(new Uint8Array(PDF_PAD), id0)));
+    for (let i = 1; i <= 19; i++) check = rc4(fileKey.map(b => b ^ i), check);
+  }
+  const n = R === 2 ? 32 : 16;
+  if (check.slice(0, n).some((b, i) => b !== U[i])) throw new Error('This PDF needs a password to open.');
+
+  if (method !== 'none') {
+    for (const [ref, obj] of ctx.enumerateIndirectObjects()) {
+      if (ref === encRef || ref.objectNumber === encRef.objectNumber) continue;
+      const g = ref.generationNumber, o = ref.objectNumber;
+      const objKey = md5(concatBytes(fileKey, new Uint8Array([o & 255, (o >> 8) & 255, (o >> 16) & 255, g & 255, (g >> 8) & 255]),
+        method === 'AES' ? new Uint8Array([0x73, 0x41, 0x6C, 0x54]) : new Uint8Array())).slice(0, Math.min(keyLen + 5, 16));
+      const dec = data => method === 'AES' ? aesDecrypt(objKey, data) : rc4(objKey, data);
+
+      const fix = async v => {
+        if (v instanceof L.PDFString || v instanceof L.PDFHexString) {
+          const b = await dec(v.asBytes());
+          return L.PDFHexString.of([...b].map(x => x.toString(16).padStart(2, '0')).join(''));
+        }
+        if (v instanceof L.PDFDict) { for (const [k, x] of v.entries()) { const y = await fix(x); if (y !== x) v.set(k, y); } }
+        else if (v instanceof L.PDFArray) { for (let i = 0; i < v.size(); i++) { const x = v.get(i), y = await fix(x); if (y !== x) v.set(i, y); } }
+        return v;
+      };
+
+      if (obj instanceof L.PDFRawStream) {
+        await fix(obj.dict);
+        const type = obj.dict.lookup(L.PDFName.of('Type'))?.asString?.();
+        if (type === '/XRef' || (type === '/Metadata' && !encryptMetadata)) continue;
+        obj.contents = await dec(obj.contents);
+        obj.dict.set(L.PDFName.of('Length'), L.PDFNumber.of(obj.contents.length));
+      } else {
+        const y = await fix(obj);
+        if (y !== obj) ctx.assign(ref, y);
+      }
+    }
+  }
+  ctx.delete(encRef);
+  tr.Encrypt = undefined;
+  return true;
+}
+
+// ---------- export ----------
+$('download').addEventListener('click', async () => {
+  const btn = $('download');
+  btn.disabled = true; status('Building PDF…');
+  try {
+    if (state.saveError) throw new Error(state.saveError);
+    const pdf = await PDFDocument.load(state.bytes);
+    const pdfPages = pdf.getPages();
+    const fontCache = {};
+    const getFont = async (family, bold, italic) => {
+      const key = { sans: 'Helvetica', serif: 'TimesRoman', mono: 'Courier' }[family];
+      const suffix = family === 'serif'
+        ? (bold && italic ? 'BoldItalic' : bold ? 'Bold' : italic ? 'Italic' : '')
+        : (bold && italic ? 'BoldOblique' : bold ? 'Bold' : italic ? 'Oblique' : '');
+      const name = StandardFonts[key + suffix] || StandardFonts[key];
+      return fontCache[name] ||= await pdf.embedFont(name);
+    };
+
+    const edited = state.boxes.filter(b => b.dirty && !b.deleted);
+    // Cover all edited/moved originals first, so a white-out never hides text moved over it
+    for (const box of edited) {
+      const page = pdfPages[box.page];
+      const { vp } = state.pages[box.page];
+      if (box.orig) {
+        const o = box.orig;
+        const a = vp.convertToPdfPoint(o.left - 1, o.top - 1);
+        const b = vp.convertToPdfPoint(o.left + o.width + 1, o.top + o.height + 1);
+        page.drawRectangle({
+          x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]),
+          width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]), color: hexToRgb(o.bg || '#ffffff'),
+        });
+      }
+    }
+
+    const pageFontCache = {};
+    for (const box of edited) {
+      const text = box.text;
+      if (!text.trim()) continue;
+      const page = pdfPages[box.page];
+      const { vp, scale } = state.pages[box.page];
+      const std = await getFont(box.family, box.bold, box.italic);
+      const f = origFont(box);
+      const pf = f && findPageFont(page, box.page, f, pageFontCache);
+      const size = box.fontPx / scale, color = hexToRgb(box.color);
+      text.split('\n').forEach((line, i) => {
+        const [x, y] = vp.convertToPdfPoint(box.left, box.baseline + i * box.fontPx * 1.25);
+        if (pf) drawInPdfFont(page, pf, line, x, y, size, color, std);
+        else page.drawText(encodable(std, line), { x, y, size, font: std, color });
+      });
+    }
+
+    const out = await pdf.save();
+    const url = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = state.name.replace(/\.pdf$/i, '') + '-edited.pdf';
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast('Downloaded ' + a.download);
+  } catch (err) {
+    console.error(err);
+    toast('Could not build the PDF: ' + err.message, 5000);
+  } finally {
+    btn.disabled = false; updateStatusCount();
+  }
+});
+
+// Find the page's font resource (e.g. /F1) whose BaseFont matches the pdf.js font
+function findPageFont(page, pageIdx, f, cache) {
+  const key = pageIdx + '|' + f.name;
+  if (key in cache) return cache[key];
+  const { PDFName, PDFDict } = PDFLib, strip = s => s.replace(/^[A-Z]{6}\+/, '').replace(/-Identity-H$/, '');
+  let found = null;
+  try {
+    page.node.normalize();
+    const fonts = page.node.Resources()?.lookupMaybe(PDFName.of('Font'), PDFDict);
+    for (const [resName, ref] of fonts ? fonts.entries() : []) {
+      const dict = page.doc.context.lookup(ref);
+      if (!(dict instanceof PDFDict)) continue;
+      const base = dict.lookup(PDFName.of('BaseFont'))?.asString?.().slice(1) || '';
+      if (base !== f.name && strip(base) !== strip(f.name)) continue;
+      const isType0 = dict.lookup(PDFName.of('Subtype'))?.asString?.() === '/Type0';
+      if (isType0 && dict.lookup(PDFName.of('Encoding'))?.asString?.() !== '/Identity-H') continue;
+      found = { resName, bytes: isType0 ? 2 : 1, f };
+      if (base === f.name) break;
+    }
+  } catch (err) { console.warn('font lookup failed', err); }
+  return cache[key] = found;
+}
+
+// Draw one line in the PDF's own font; characters the font subset lacks use the standard font
+function drawInPdfFont(page, pf, line, x, y, size, color, std) {
+  const L = PDFLib, f = pf.f, runs = [];
+  for (const ch of line) {
+    const has = f.rev.has(ch), last = runs[runs.length - 1];
+    if (last && last.has === has) last.s += ch; else runs.push({ has, s: ch });
+  }
+  let cx = x;
+  for (const r of runs) {
+    if (r.has) {
+      let hex = '', w = 0;
+      for (const ch of r.s) {
+        const code = f.rev.get(ch);
+        hex += code.toString(16).padStart(pf.bytes * 2, '0');
+        w += f.widths[code] ?? f.dw;
+      }
+      page.pushOperators(
+        L.pushGraphicsState(), L.beginText(), L.setFontAndSize(pf.resName, size),
+        L.setFillingRgbColor(color.red, color.green, color.blue), L.moveText(cx, y),
+        L.showText(L.PDFHexString.of(hex)), L.endText(), L.popGraphicsState());
+      cx += w / 1000 * size;
+    } else {
+      const s = encodable(std, r.s);
+      page.drawText(s, { x: cx, y, size, font: std, color });
+      cx += std.widthOfTextAtSize(s, size);
+    }
+  }
+}
+
+// Standard PDF fonts only cover Latin characters; swap anything else for "?"
+function encodable(font, s) {
+  let out = '';
+  for (const ch of s) {
+    try { font.encodeText(ch); out += ch; } catch (_) { out += '?'; }
+  }
+  return out;
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
+}
+
+// ---------- ui helpers ----------
+function status(s) { $('status').textContent = s; }
+function updateStatusCount() {
+  const n = state.boxes.filter(b => b.dirty && !b.deleted).length;
+  status(n ? `${n} change${n > 1 ? 's' : ''} · ${state.name}` : state.name);
+}
+let toastTimer;
+function toast(msg, ms = 2500) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+</script>
+</body>
+</html>
