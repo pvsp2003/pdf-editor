@@ -19,6 +19,7 @@ Nothing is uploaded. The PDF is opened, edited and saved entirely on your own de
 - **Zoom.** The − / + buttons, Ctrl+scroll or Ctrl + / −. Pages re-render sharply at every zoom level.
 - **Page tools.** Hover over a page to move it up or down, rotate it or delete it.
 - **Images and signatures.** Insert a PNG or JPG (or drag one onto the page), or draw a signature. Drag it into place and resize it from the corner.
+- **Annotate.** Highlight, underline or strike through text (click a piece of text, or drag across it and the mark fits the text), and draw boxes, lines, arrows, ticks and crosses. Pick the colour and thickness, and change them later on any mark. Highlights use a highlighter-style blend so the text stays readable.
 - **Redact.** Black out anything by dragging over it. Redacted pages are turned into images on download, so the hidden text is really removed, not just covered.
 - **Style controls.** Change size, bold and colour, or delete text.
 - **Undo / redo.** Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z).
@@ -31,6 +32,7 @@ Nothing is uploaded. The PDF is opened, edited and saved entirely on your own de
    - **Edit**: click text to change it.
    - **Add text**: click on a page to add new text.
    - **Move**: drag text into place. Hold Shift to move in one direction only, hold Alt to turn off snapping. Arrow keys nudge by 1px (Shift for 10px). Double-click selects a whole line; Shift+click selects several pieces.
+   - **Annotate**: pick a tool in the bar at the bottom. Click or drag across text to highlight, underline or strike it through; drag to draw a box, line or arrow (Shift keeps lines straight); click to place a tick or cross.
    - **Redact**: drag over anything to black it out.
    - **Image** / **Signature**: insert a picture or draw a signature, then drag it into place.
 3. Click **Download PDF** to save `yourfile-edited.pdf`.
@@ -41,10 +43,10 @@ Nothing is uploaded. The PDF is opened, edited and saved entirely on your own de
 | --- | --- |
 | Ctrl+Z | Undo |
 | Ctrl+Y / Ctrl+Shift+Z | Redo |
-| Ctrl+D | Duplicate selected text or image |
+| Ctrl+D | Duplicate selected text, image or mark |
 | Ctrl+F | Find & replace |
 | Ctrl + / Ctrl − / Ctrl 0 | Zoom in / out / reset |
-| Delete | Remove the selected image, redaction or (in Move mode) text |
+| Delete | Remove the selected image, mark, redaction or (in Move mode) text |
 | Esc | Stop editing the current text |
 | Arrow keys | Nudge selected text (Move mode) or image |
 

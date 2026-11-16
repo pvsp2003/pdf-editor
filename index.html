@@ -166,7 +166,7 @@
     opacity: 0; transition: opacity .15s; pointer-events: none; max-width: calc(100vw - 32px);
   }
   #toast.show { opacity: 1; }
-  body.move.has-doc #toast { bottom: 92px; } /* clear of the arrange bar */
+  body.move.has-doc #toast, body.annotate.has-doc #toast { bottom: 92px; } /* clear of the bottom bars */
 
   /* ---------- zoom ---------- */
   .zoom { display: flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; margin-right: 6px; }
@@ -221,6 +221,34 @@
     box-shadow: 0 6px 20px rgba(28, 27, 25, .16);
   }
   body.move.has-doc #arrange { display: flex; }
+
+  /* ---------- annotate bar & marks ---------- */
+  #annot {
+    position: fixed; bottom: 38px; left: 50%; transform: translateX(-50%); z-index: 15; display: none;
+    align-items: center; gap: 2px; padding: 4px; max-width: calc(100vw - 24px); overflow-x: auto;
+    background: var(--chrome); border: 1px solid var(--line-strong); border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(28, 27, 25, .16);
+  }
+  body.annotate.has-doc #annot { display: flex; }
+  #annot .sep { margin: 4px 4px; }
+  #annot [data-tool].on { background: var(--ink); color: var(--on-ink); }
+  #mkWidth {
+    height: 28px; padding: 0 6px; font: inherit; color: var(--ink); background: var(--desk);
+    border: 1px solid var(--line-strong); border-radius: 5px;
+  }
+  body.annotate .layer, body.annotate .box { cursor: crosshair; }
+  body.annotate .box { user-select: none; }
+  .shape.mark svg { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+  .shape.hl { mix-blend-mode: multiply; }
+  .shape.line { pointer-events: none; }
+  .shape.line .hit { pointer-events: stroke; stroke: transparent; stroke-width: 14px; cursor: move; }
+  .shape.line .handle { pointer-events: auto; cursor: crosshair; }
+  .shape.line.sel { outline: none; }
+  .shape.line.sel svg { filter: drop-shadow(0 0 1.5px #d4461b); }
+  /* Marks stay out of the way while editing text; select them in Annotate or Move mode */
+  body:not(.annotate):not(.move) .shape.mark,
+  body:not(.annotate):not(.move) .shape.mark .hit,
+  body:not(.annotate):not(.move) .shape.mark .handle { pointer-events: none; }
   #arrange .sep { margin: 4px 4px; }
   #arCount { font-size: 11px; color: var(--muted); padding: 0 8px; white-space: nowrap; }
 
@@ -260,6 +288,7 @@
     <button id="modeEdit" class="on" title="Click existing text to change it">Edit</button>
     <button id="modeAdd" title="Click anywhere on a page to add new text">Add text</button>
     <button id="modeMove" title="Drag text to move it; Shift+click or double-click to select several">Move</button>
+    <button id="modeAnnotate" title="Highlight, underline, strike through, draw boxes, lines, arrows, ticks and crosses">Annotate</button>
     <button id="modeRedact" title="Drag over anything to black it out">Redact</button>
   </div>
 
@@ -325,6 +354,26 @@
   <button id="arRight" disabled title="Line up right edges">Align right</button>
   <button id="arBase" disabled title="Put them on the same baseline">Same line</button>
   <button id="arJoin" disabled title="Merge into one piece of text">Join</button>
+</div>
+
+<div id="annot">
+  <div class="group" role="group" aria-label="Annotation tool">
+    <button data-tool="hl" class="icon on" title="Highlight — click text or drag across it"><svg class="i" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg></button>
+    <button data-tool="ul" class="icon" title="Underline — click text or drag under it"><svg class="i" viewBox="0 0 24 24"><path d="M6 4v6a6 6 0 0 0 12 0V4"/><path d="M4 20h16"/></svg></button>
+    <button data-tool="st" class="icon" title="Strike through — click text or drag across it"><svg class="i" viewBox="0 0 24 24"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><path d="M4 12h16"/></svg></button>
+    <button data-tool="rect" class="icon" title="Box — drag to draw"><svg class="i" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="1"/></svg></button>
+    <button data-tool="line" class="icon" title="Line — drag to draw (Shift keeps it straight)"><svg class="i" viewBox="0 0 24 24"><path d="M5 19 19 5"/></svg></button>
+    <button data-tool="arrow" class="icon" title="Arrow — drag to draw (Shift keeps it straight)"><svg class="i" viewBox="0 0 24 24"><path d="M5 19 19 5"/><path d="M10 5h9v9"/></svg></button>
+    <button data-tool="tick" class="icon" title="Tick — click to place, or drag to size"><svg class="i" viewBox="0 0 24 24"><path d="M4 12.5 9.5 18 20 6"/></svg></button>
+    <button data-tool="cross" class="icon" title="Cross — click to place, or drag to size"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+  <div class="sep"></div>
+  <input type="color" id="mkColor" value="#ffd43b" title="Colour">
+  <select id="mkWidth" title="Line thickness">
+    <option value="1">Thin</option>
+    <option value="2" selected>Medium</option>
+    <option value="3.5">Thick</option>
+  </select>
 </div>
 
 <footer>
@@ -850,6 +899,13 @@ function selectShape(s) {
   clearSel();
   state.shape = s;
   if (s) s.el.classList.add('sel');
+  if (s && MARK_KINDS.has(s.kind)) {
+    $('mkColor').value = s.color;
+    if (s.kind !== 'hl') {
+      const pt = s.sw / state.pages[s.page].scale;
+      $('mkWidth').value = [...$('mkWidth').options].map(o => o.value).sort((a, b) => Math.abs(a - pt) - Math.abs(b - pt))[0];
+    }
+  }
   updateToolbar();
 }
 
@@ -910,12 +966,13 @@ const HINTS = {
   add: 'Click on a page to add text',
   move: 'Drag to move · Shift+click selects several · double-click selects a line · Alt turns off snapping',
   redact: 'Drag over anything to black it out · redacted pages are flattened on download',
+  annotate: 'Click text to mark it, or drag across it · Shift keeps lines straight',
 };
 function setMode(m) {
   state.mode = m;
-  [['modeEdit', 'edit'], ['modeAdd', 'add'], ['modeMove', 'move'], ['modeRedact', 'redact']]
+  [['modeEdit', 'edit'], ['modeAdd', 'add'], ['modeMove', 'move'], ['modeAnnotate', 'annotate'], ['modeRedact', 'redact']]
     .forEach(([id, k]) => $(id).classList.toggle('on', m === k));
-  ['add', 'move', 'redact'].forEach(k => document.body.classList.toggle(k, m === k));
+  ['add', 'move', 'annotate', 'redact'].forEach(k => document.body.classList.toggle(k, m === k));
   $('hint').textContent = HINTS[m];
   if (m !== 'edit' && document.activeElement?.classList.contains('box')) document.activeElement.blur();
   if (m !== 'move' && state.sel.size > 1) select(state.selected);
@@ -924,6 +981,7 @@ $('modeEdit').addEventListener('click', () => setMode('edit'));
 $('modeAdd').addEventListener('click', () => setMode('add'));
 $('modeMove').addEventListener('click', () => setMode('move'));
 $('modeRedact').addEventListener('click', () => setMode('redact'));
+$('modeAnnotate').addEventListener('click', () => setMode('annotate'));
 
 // ---------- moving & aligning ----------
 const SNAP_PX = 6;
@@ -1088,7 +1146,7 @@ document.addEventListener('keydown', e => {
   if (state.shape) {
     e.preventDefault();
     const s = state.shape, before = shapeSnap(s);
-    s.left += dx; s.top += dy; styleShape(s);
+    moveShape(s, dx, dy); styleShape(s);
     recordShape(s, before);
     return;
   }
@@ -1120,11 +1178,9 @@ pagesEl.addEventListener('mousedown', e => {
 // or the selected image/redaction slightly offset
 function duplicate() {
   if (state.shape) {
-    const s0 = state.shape, layer = state.pages[s0.page].layer;
-    const s = addShape({
-      kind: s0.kind, page: s0.page, src: s0.src, mime: s0.mime, bytes: s0.bytes, w: s0.w, h: s0.h,
-      left: Math.min(s0.left + 14, layer.clientWidth - s0.w), top: Math.min(s0.top + 14, layer.clientHeight - s0.h),
-    });
+    const { el, svg, handle, deleted, ...props } = state.shape;
+    const s = addShape(props);
+    moveShape(s, 14, 14); styleShape(s);
     recordShape(s, { ...shapeSnap(s), deleted: true });
     selectShape(s);
     return;
@@ -1334,23 +1390,81 @@ pagesEl.addEventListener('click', e => {
 
 // ---------- images, signatures & redactions ----------
 // "Shapes" sit above the text on a page; they can be dragged in any mode and resized from the corner.
-const shapeSnap = s => ({ left: s.left, top: s.top, w: s.w, h: s.h, deleted: s.deleted });
-function styleShape(s) {
-  Object.assign(s.el.style, { left: s.left + 'px', top: s.top + 'px', width: s.w + 'px', height: s.h + 'px' });
+const shapeSnap = s => ({
+  left: s.left, top: s.top, w: s.w, h: s.h, x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, color: s.color, sw: s.sw, deleted: s.deleted,
+});
+
+// Annotation kinds. Lines (underline, strike-through, line, arrow) are stored as two end points.
+const MARK_KINDS = new Set(['hl', 'rect', 'line', 'tick', 'cross']);
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+function arrowHead(x1, y1, x2, y2, sw) {
+  const a = Math.atan2(y2 - y1, x2 - x1), len = Math.max(9, sw * 4);
+  return [[x2 - len * Math.cos(a - 0.5), y2 - len * Math.sin(a - 0.5)], [x2 - len * Math.cos(a + 0.5), y2 - len * Math.sin(a + 0.5)]];
 }
+
+// Polylines (page layout px) that draw a line/arrow/tick/cross — shared by the screen and the export
+function markLines(s) {
+  if (s.kind === 'line') {
+    const lines = [[[s.x1, s.y1], [s.x2, s.y2]]];
+    if (s.arrow) { const [a, b] = arrowHead(s.x1, s.y1, s.x2, s.y2, s.sw); lines.push([a, [s.x2, s.y2], b]); }
+    return lines;
+  }
+  const P = (u, v) => [s.left + u * s.w, s.top + v * s.h];
+  if (s.kind === 'tick') return [[P(0.08, 0.55), P(0.38, 0.88), P(0.92, 0.12)]];
+  if (s.kind === 'cross') return [[P(0.12, 0.12), P(0.88, 0.88)], [P(0.88, 0.12), P(0.12, 0.88)]];
+  return [];
+}
+
+function renderMark(s) {
+  const W = Math.max(s.w, 1), H = Math.max(s.h, 1);
+  s.svg.setAttribute('width', W);
+  s.svg.setAttribute('height', H);
+  s.svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  const rel = pl => pl.map(([x, y]) => `${(x - s.left).toFixed(2)},${(y - s.top).toFixed(2)}`).join(' ');
+  const stroke = `fill="none" stroke="${s.color}" stroke-width="${s.sw}" stroke-linecap="round" stroke-linejoin="round"`;
+  let svg = '';
+  if (s.kind === 'hl') svg = `<rect width="${W}" height="${H}" fill="${s.color}"/>`;
+  else if (s.kind === 'rect') svg = `<rect width="${W}" height="${H}" ${stroke}/>`;
+  else for (const pl of markLines(s)) {
+    svg += `<polyline points="${rel(pl)}" ${stroke}/>`;
+    if (s.kind === 'line') svg += `<polyline class="hit" points="${rel(pl)}" fill="none"/>`;
+  }
+  s.svg.innerHTML = svg;
+}
+
+function styleShape(s) {
+  if (s.x1 !== undefined) { // lines: bounding box from the end points
+    s.left = Math.min(s.x1, s.x2); s.top = Math.min(s.y1, s.y2);
+    s.w = Math.abs(s.x2 - s.x1); s.h = Math.abs(s.y2 - s.y1);
+    Object.assign(s.handle.style, { left: s.x2 - s.left - 6 + 'px', top: s.y2 - s.top - 6 + 'px', right: 'auto', bottom: 'auto' });
+  }
+  Object.assign(s.el.style, { left: s.left + 'px', top: s.top + 'px', width: s.w + 'px', height: s.h + 'px' });
+  if (s.svg) renderMark(s);
+}
+
+function moveShape(s, dx, dy) {
+  if (s.x1 !== undefined) { s.x1 += dx; s.x2 += dx; s.y1 += dy; s.y2 += dy; }
+  else { s.left += dx; s.top += dy; }
+}
+
 function addShape(props) {
   const s = { deleted: false, ...props };
   s.el = document.createElement('div');
-  s.el.className = 'shape ' + s.kind;
+  s.el.className = 'shape ' + s.kind + (MARK_KINDS.has(s.kind) ? ' mark' : '');
   if (s.kind === 'image') {
     const img = new Image();
     img.src = s.src; img.alt = ''; img.draggable = false;
     s.el.append(img);
   }
-  const handle = document.createElement('div');
-  handle.className = 'handle';
-  s.el.append(handle);
-  s.el.addEventListener('pointerdown', e => dragShape(e, s, e.target === handle));
+  if (MARK_KINDS.has(s.kind)) {
+    s.svg = document.createElementNS(SVG_NS, 'svg');
+    s.el.append(s.svg);
+  }
+  s.handle = document.createElement('div');
+  s.handle.className = 'handle';
+  s.el.append(s.handle);
+  s.el.addEventListener('pointerdown', e => dragShape(e, s, e.target === s.handle));
   styleShape(s);
   state.pages[s.page].layer.append(s.el);
   state.shapes.push(s);
@@ -1388,20 +1502,27 @@ function dragShape(e, s, resize) {
   let moved = false;
   s.el.setPointerCapture(e.pointerId);
   const onMove = ev => {
-    const dx = (ev.clientX - sx) / z, dy = (ev.clientY - sy) / z;
+    let dx = (ev.clientX - sx) / z, dy = (ev.clientY - sy) / z;
     if (!moved && Math.hypot(dx, dy) < 2) return;
     moved = true;
-    if (resize) {
+    Object.assign(s, before);
+    if (resize && s.x1 !== undefined) { // lines: drag the end point (Shift = straight / 45°)
+      let p = { x: Math.max(0, Math.min(W, before.x2 + dx)), y: Math.max(0, Math.min(H, before.y2 + dy)) };
+      if (ev.shiftKey) p = snapAngle({ x: before.x1, y: before.y1 }, p);
+      s.x2 = p.x; s.y2 = p.y;
+    } else if (resize) {
       let w = Math.max(12, Math.min(W - s.left, before.w + dx));
       let h = Math.max(6, Math.min(H - s.top, before.h + dy));
-      if (s.kind === 'image' && !ev.shiftKey) { // keep proportions (Shift = free resize)
+      const keepRatio = s.kind === 'tick' || s.kind === 'cross' || (s.kind === 'image' && !ev.shiftKey); // Shift = free resize for images
+      if (keepRatio) {
         h = w / ratio;
         if (h > H - s.top) { h = H - s.top; w = h * ratio; }
       }
       s.w = w; s.h = h;
     } else {
-      s.left = Math.max(0, Math.min(W - s.w, before.left + dx));
-      s.top = Math.max(0, Math.min(H - s.h, before.top + dy));
+      dx = Math.max(-before.left, Math.min(W - before.left - before.w, dx));
+      dy = Math.max(-before.top, Math.min(H - before.top - before.h, dy));
+      moveShape(s, dx, dy);
     }
     styleShape(s);
   };
@@ -1415,6 +1536,139 @@ function dragShape(e, s, resize) {
   s.el.addEventListener('pointerup', onUp);
   s.el.addEventListener('pointercancel', onUp);
 }
+
+// Keep a line horizontal, vertical or at 45° from its start point
+function snapAngle(p0, p) {
+  const dx = p.x - p0.x, dy = p.y - p0.y, len = Math.hypot(dx, dy);
+  const a = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+  return { x: p0.x + len * Math.cos(a), y: p0.y + len * Math.sin(a) };
+}
+
+// ---------- annotations ----------
+const ann = { tool: 'hl', colors: { hl: '#ffd43b', pen: '#e03131' }, width: 2 };
+const toolColor = t => ann.colors[t === 'hl' ? 'hl' : 'pen'];
+
+// Text pieces on a page whose bounds intersect a rectangle, grouped into rows (same baseline)
+const textBounds = b => ({ l: b.left, r: b.left + b.el.offsetWidth, t: b.baseline - b.fontPx * 0.85, b: b.baseline + b.fontPx * 0.22 });
+function textRows(page, hit) {
+  const rows = [];
+  const found = state.boxes
+    .filter(b => b.page === page && !b.deleted && b.text.trim() && hit(textBounds(b)))
+    .sort((a, b) => a.baseline - b.baseline || a.left - b.left);
+  for (const b of found) {
+    const row = rows.find(r => Math.abs(r[0].baseline - b.baseline) < r[0].fontPx * 0.35);
+    if (row) row.push(b); else rows.push([b]);
+  }
+  return rows;
+}
+
+// Highlight / underline / strike-through fitted exactly to rows of text
+function marksForRows(tool, page, rows, color) {
+  return rows.map(row => {
+    const l = Math.min(...row.map(b => b.left)) - 1, r = Math.max(...row.map(b => b.left + b.el.offsetWidth)) + 1;
+    const fs = Math.max(...row.map(b => b.fontPx)), base = Math.max(...row.map(b => b.baseline));
+    if (tool === 'hl') {
+      const t = Math.min(...row.map(b => b.baseline - b.fontPx * 0.85));
+      return addShape({ kind: 'hl', page, color, left: l, top: t, w: r - l, h: base + fs * 0.22 - t });
+    }
+    const y = tool === 'ul' ? base + fs * 0.12 : base - fs * 0.3;
+    return addShape({ kind: 'line', page, color, sw: Math.max(1, fs * 0.07), x1: l, y1: y, x2: r, y2: y });
+  });
+}
+
+// Annotate mode: click text to mark it, or drag to draw
+pagesEl.addEventListener('pointerdown', e => {
+  if (state.mode !== 'annotate' || e.button !== 0) return;
+  const t = e.target, onBox = t.classList.contains('box');
+  if (!onBox && !t.classList.contains('layer')) return;
+  e.preventDefault();
+  if (document.activeElement?.classList.contains('box')) document.activeElement.blur();
+  selectShape(null);
+  const layer = onBox ? t.closest('.layer') : t, page = +layer.dataset.page, scale = state.pages[page].scale;
+  const tool = ann.tool, color = toolColor(tool), sw = ann.width * scale, textTool = ['hl', 'ul', 'st'].includes(tool);
+  const p0 = toLayer(e, layer), W = layer.clientWidth, H = layer.clientHeight;
+  let live = null, moved = false;
+  layer.setPointerCapture(e.pointerId);
+
+  const onMove = ev => {
+    const q = toLayer(ev, layer);
+    let p = { x: Math.max(0, Math.min(W, q.x)), y: Math.max(0, Math.min(H, q.y)) };
+    if (!moved && Math.hypot(p.x - p0.x, p.y - p0.y) < 3) return;
+    moved = true;
+    if (['line', 'arrow', 'ul', 'st'].includes(tool)) {
+      if (tool === 'ul' || tool === 'st') p.y = p0.y;
+      else if (ev.shiftKey) p = snapAngle(p0, p);
+      live ||= addShape({ kind: 'line', arrow: tool === 'arrow', page, color, sw, x1: p0.x, y1: p0.y, x2: p.x, y2: p.y });
+      live.x2 = p.x; live.y2 = p.y;
+    } else {
+      let w = p.x - p0.x, h = p.y - p0.y;
+      if (tool === 'tick' || tool === 'cross') { const d = Math.max(Math.abs(w), Math.abs(h)); w = Math.sign(w || 1) * d; h = Math.sign(h || 1) * d; }
+      live ||= addShape({ kind: tool, page, color, sw, left: p0.x, top: p0.y, w: 0, h: 0 });
+      Object.assign(live, { left: Math.min(p0.x, p0.x + w), top: Math.min(p0.y, p0.y + h), w: Math.abs(w), h: Math.abs(h) });
+    }
+    styleShape(live);
+  };
+
+  const onUp = () => {
+    layer.removeEventListener('pointermove', onMove);
+    layer.removeEventListener('pointerup', onUp);
+    layer.removeEventListener('pointercancel', onUp);
+    const discard = s => { s.el.remove(); state.shapes = state.shapes.filter(x => x !== s); };
+    let made = [];
+    if (live && textTool) {
+      // Dragged across text: fit the marks to the text it covers
+      const x0 = Math.min(live.left, p0.x), x1 = Math.max(live.left + live.w, p0.x);
+      const rows = tool === 'hl'
+        ? textRows(page, b => b.r > live.left && b.l < live.left + live.w && b.b > live.top && b.t < live.top + live.h)
+        : textRows(page, b => b.r > x0 && b.l < x1 && p0.y > b.t && p0.y < b.b + (b.b - b.t) * 0.5);
+      if (rows.length) { discard(live); made = marksForRows(tool, page, rows, color); }
+    }
+    if (!made.length && live) {
+      if (live.w + live.h >= 6) made = [live]; else discard(live);
+    }
+    if (!live && onBox && textTool) made = marksForRows(tool, page, [[t._box]], color);
+    if (!live && (tool === 'tick' || tool === 'cross')) {
+      const d = 14 * scale;
+      made = [addShape({ kind: tool, page, color, sw, left: Math.max(0, p0.x - d / 2), top: Math.max(0, p0.y - d / 2), w: d, h: d })];
+    }
+    if (!made.length) return;
+    beginBatch();
+    for (const s of made) recordShape(s, { ...shapeSnap(s), deleted: true });
+    endBatch();
+    if (made.length === 1) selectShape(made[0]);
+  };
+  layer.addEventListener('pointermove', onMove);
+  layer.addEventListener('pointerup', onUp);
+  layer.addEventListener('pointercancel', onUp);
+});
+
+// Annotate bar: tool, colour, thickness (colour/thickness also edit the selected mark)
+document.querySelectorAll('#annot [data-tool]').forEach(btn => btn.addEventListener('click', () => {
+  ann.tool = btn.dataset.tool;
+  document.querySelectorAll('#annot [data-tool]').forEach(b => b.classList.toggle('on', b === btn));
+  if (!(state.shape && MARK_KINDS.has(state.shape.kind))) $('mkColor').value = toolColor(ann.tool);
+}));
+const selectedMark = () => state.shape && MARK_KINDS.has(state.shape.kind) ? state.shape : null;
+let markBefore = null;
+$('mkColor').addEventListener('input', () => {
+  const s = selectedMark(), v = $('mkColor').value;
+  if (!s) { ann.colors[ann.tool === 'hl' ? 'hl' : 'pen'] = v; return; }
+  markBefore ||= shapeSnap(s);
+  s.color = v; styleShape(s);
+});
+$('mkColor').addEventListener('change', () => {
+  const s = selectedMark();
+  if (s && markBefore) recordShape(s, markBefore);
+  markBefore = null;
+});
+$('mkWidth').addEventListener('change', () => {
+  const v = parseFloat($('mkWidth').value), s = selectedMark();
+  if (!s) { ann.width = v; return; }
+  if (s.kind === 'hl') return;
+  const before = shapeSnap(s);
+  s.sw = v * state.pages[s.page].scale; styleShape(s);
+  recordShape(s, before);
+});
 
 // Redact mode: drag on a page to draw a black box
 pagesEl.addEventListener('pointerdown', e => {
@@ -1764,6 +2018,22 @@ $('download').addEventListener('click', async () => {
         imgCache.set(s.src, img);
       }
       pdfPages[s.page].drawImage(img, toPdfRect(state.pages[s.page].vp, s.left, s.top, s.w, s.h));
+    }
+
+    // Annotations: highlights (multiply blend, like a highlighter pen), boxes, lines, arrows, ticks, crosses
+    for (const s of state.shapes) {
+      if (s.deleted || !MARK_KINDS.has(s.kind)) continue;
+      const page = pdfPages[s.page], { vp, scale } = state.pages[s.page], color = hexToRgb(s.color);
+      if (s.kind === 'hl') {
+        page.drawRectangle({ ...toPdfRect(vp, s.left, s.top, s.w, s.h), color, blendMode: PDFLib.BlendMode.Multiply });
+      } else if (s.kind === 'rect') {
+        page.drawRectangle({ ...toPdfRect(vp, s.left, s.top, s.w, s.h), borderColor: color, borderWidth: s.sw / scale });
+      } else {
+        for (const pl of markLines(s)) for (let i = 1; i < pl.length; i++) {
+          const [ax, ay] = vp.convertToPdfPoint(...pl[i - 1]), [bx, by] = vp.convertToPdfPoint(...pl[i]);
+          page.drawLine({ start: { x: ax, y: ay }, end: { x: bx, y: by }, thickness: s.sw / scale, color, lineCap: PDFLib.LineCapStyle.Round });
+        }
+      }
     }
 
     // Redactions: a black box alone would leave the text underneath selectable, so each redacted
