@@ -14,6 +14,12 @@ Nothing is uploaded. The PDF is opened, edited and saved entirely on your own de
 - **Add text.** Place new text anywhere on a page.
 - **Duplicate.** Copy existing text with its exact font, size and colour (Ctrl+D).
 - **Move and align.** Drag text to a new position. It snaps to the edges and baselines of nearby text, with guide lines.
+- **Whole lines.** In Move mode, double-click a piece to select its whole line, or Shift+click to pick several. Then move them together, align their left or right edges, put them on the same line, or join them into one editable piece.
+- **Find & replace.** Ctrl+F to find text across the document and replace one match or all of them.
+- **Zoom.** The − / + buttons, Ctrl+scroll or Ctrl + / −. Pages re-render sharply at every zoom level.
+- **Page tools.** Hover over a page to move it up or down, rotate it or delete it.
+- **Images and signatures.** Insert a PNG or JPG (or drag one onto the page), or draw a signature. Drag it into place and resize it from the corner.
+- **Redact.** Black out anything by dragging over it. Redacted pages are turned into images on download, so the hidden text is really removed, not just covered.
 - **Style controls.** Change size, bold and colour, or delete text.
 - **Undo / redo.** Ctrl+Z and Ctrl+Y (or Ctrl+Shift+Z).
 - **Protected PDFs.** Many PDFs (payslips, bank statements) are encrypted but open without a password. They are unlocked automatically so the edited file opens everywhere.
@@ -24,7 +30,9 @@ Nothing is uploaded. The PDF is opened, edited and saved entirely on your own de
 2. Pick a mode in the toolbar:
    - **Edit**: click text to change it.
    - **Add text**: click on a page to add new text.
-   - **Move**: drag text into place. Hold Shift to move in one direction only, hold Alt to turn off snapping. Arrow keys nudge by 1px (Shift for 10px).
+   - **Move**: drag text into place. Hold Shift to move in one direction only, hold Alt to turn off snapping. Arrow keys nudge by 1px (Shift for 10px). Double-click selects a whole line; Shift+click selects several pieces.
+   - **Redact**: drag over anything to black it out.
+   - **Image** / **Signature**: insert a picture or draw a signature, then drag it into place.
 3. Click **Download PDF** to save `yourfile-edited.pdf`.
 
 ## Keyboard shortcuts
@@ -33,15 +41,21 @@ Nothing is uploaded. The PDF is opened, edited and saved entirely on your own de
 | --- | --- |
 | Ctrl+Z | Undo |
 | Ctrl+Y / Ctrl+Shift+Z | Redo |
-| Ctrl+D | Duplicate selected text |
+| Ctrl+D | Duplicate selected text or image |
+| Ctrl+F | Find & replace |
+| Ctrl + / Ctrl − / Ctrl 0 | Zoom in / out / reset |
+| Delete | Remove the selected image, redaction or (in Move mode) text |
 | Esc | Stop editing the current text |
-| Arrow keys (Move mode) | Nudge selected text |
+| Arrow keys | Nudge selected text (Move mode) or image |
 
 ## Limitations
 
-- **Text only.** Images, lines and shapes are part of the page and can't be moved or edited.
+- **Existing graphics stay put.** Images, lines and shapes already in the PDF can't be moved or edited (you can cover them with a redaction or place new images on top).
 - **Missing characters.** PDFs usually embed only the characters they use. If you type a character the embedded font doesn't have, that character is drawn in a similar standard font.
 - **How edits are applied.** Edited text is covered with a patch in the background colour and redrawn on top. On gradient or image backgrounds the patch may be visible.
+- **Find works piece by piece.** A phrase split across separate pieces of text isn't found. Join the pieces first.
+- **Redacted pages become images.** Their text can no longer be selected or searched.
+- **Rotated pages are view-only** in the editor until you rotate them back.
 - **Unsupported files.** Scanned PDFs have no editable text, though you can still add text. Rotated text can't be edited. PDFs that need a password to open, or that use AES-256 protection, can be viewed but not saved.
 
 ## Running locally

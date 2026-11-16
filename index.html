@@ -101,7 +101,7 @@
   button.primary:hover:not(:disabled) { background: var(--ink); opacity: .88; }
   button.primary:disabled { background: var(--line-strong); color: var(--chrome); opacity: 1; }
 
-  @media (max-width: 1080px) { .lbl { display: none; } .seg button { padding: 0 9px; } }
+  @media (max-width: 1640px) { .lbl { display: none; } .seg button { padding: 0 9px; } }
   @media (max-width: 600px) { .sep { display: none; } header h1 { display: none; } }
 
   /* ---------- workspace ---------- */
@@ -119,15 +119,11 @@
   #drop .btn:hover { opacity: .88; }
   #drop .fine { margin: 18px 0 0; font-size: 12px; }
 
-  #pages { padding: 28px 16px 48px; display: flex; flex-direction: column; align-items: center; gap: 36px; }
+  #pages { padding: 28px 16px 48px; display: flex; flex-direction: column; align-items: safe center; gap: 28px; }
   .page { position: relative; background: #fff; box-shadow: var(--page-shadow); }
   .page canvas { display: block; }
   .layer { position: absolute; inset: 0; }
   body.add .layer { cursor: crosshair; }
-  .pnum {
-    position: absolute; bottom: -24px; left: 0; right: 0; text-align: center;
-    font: 11px "IBM Plex Mono", ui-monospace, monospace; color: var(--muted);
-  }
 
   /* ---------- status bar ---------- */
   footer {
@@ -170,6 +166,79 @@
     opacity: 0; transition: opacity .15s; pointer-events: none; max-width: calc(100vw - 32px);
   }
   #toast.show { opacity: 1; }
+  body.move.has-doc #toast { bottom: 92px; } /* clear of the arrange bar */
+
+  /* ---------- zoom ---------- */
+  .zoom { display: flex; border: 1px solid var(--line-strong); border-radius: 6px; overflow: hidden; margin-right: 6px; }
+  .zoom button { height: 28px; border-radius: 0; border: 0; }
+  #zoomLbl { min-width: 52px; justify-content: center; font-size: 12px; padding: 0 4px; }
+
+  /* ---------- find & replace ---------- */
+  #findbar {
+    flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 12px;
+    background: var(--chrome); border-bottom: 1px solid var(--line);
+  }
+  #findbar[hidden] { display: none; }
+  #findbar input[type=text] {
+    width: 200px; height: 28px; padding: 0 8px; font: inherit; color: var(--ink);
+    background: var(--desk); border: 1px solid var(--line-strong); border-radius: 5px;
+  }
+  #findbar .check { display: flex; align-items: center; gap: 5px; color: var(--muted); margin: 0 4px; }
+  #findCount { color: var(--muted); font-size: 11px; margin-left: 4px; }
+  .box.match { background: rgba(250, 204, 21, .35); }
+  .box.match.cur { background: rgba(250, 204, 21, .6); box-shadow: 0 0 0 1.5px #d4461b; }
+
+  /* ---------- page slots & page tools ---------- */
+  .slot { display: flex; flex-direction: column; gap: 6px; }
+  .slot[hidden] { display: none; }
+  .phead { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 24px; }
+  .pnum { font: 11px "IBM Plex Mono", ui-monospace, monospace; color: var(--muted); }
+  .ptools { display: flex; gap: 2px; opacity: 0; transition: opacity .12s; }
+  .slot:hover .ptools, .ptools:focus-within { opacity: 1; }
+  @media (hover: none) { .ptools { opacity: 1; } }
+  .ptools button { width: 26px; height: 24px; padding: 0; justify-content: center; }
+  .ptools button[data-act=del]:hover:not(:disabled) { color: var(--danger); }
+  .pframe { position: relative; }
+  .slot.rotated .layer { pointer-events: none; }
+
+  /* ---------- images, signatures, redactions ---------- */
+  .shape { position: absolute; z-index: 3; cursor: move; touch-action: none; }
+  .shape.image img { display: block; width: 100%; height: 100%; pointer-events: none; user-select: none; }
+  .shape.redact { background: #000; }
+  .shape.sel { outline: 1.5px solid #d4461b; outline-offset: 1px; }
+  .shape .handle {
+    display: none; position: absolute; right: -6px; bottom: -6px; width: 11px; height: 11px;
+    background: #fff; border: 1.5px solid #d4461b; cursor: nwse-resize;
+  }
+  .shape.sel .handle { display: block; }
+  body.redact .layer { cursor: crosshair; }
+
+  /* ---------- arrange bar (Move mode) ---------- */
+  #arrange {
+    position: fixed; bottom: 38px; left: 50%; transform: translateX(-50%); z-index: 15; display: none;
+    align-items: center; gap: 2px; padding: 4px; max-width: calc(100vw - 24px); overflow-x: auto;
+    background: var(--chrome); border: 1px solid var(--line-strong); border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(28, 27, 25, .16);
+  }
+  body.move.has-doc #arrange { display: flex; }
+  #arrange .sep { margin: 4px 4px; }
+  #arCount { font-size: 11px; color: var(--muted); padding: 0 8px; white-space: nowrap; }
+
+  /* ---------- signature dialog ---------- */
+  dialog#sigDlg {
+    width: min(640px, calc(100vw - 24px)); padding: 0; color: var(--ink); background: var(--chrome);
+    border: 1px solid var(--line-strong); border-radius: 8px; box-shadow: 0 20px 60px rgba(0, 0, 0, .3);
+  }
+  dialog#sigDlg::backdrop { background: rgba(20, 19, 18, .45); }
+  .dlg-head { padding: 12px 16px; font-weight: 600; border-bottom: 1px solid var(--line); }
+  #sigPad {
+    display: block; width: calc(100% - 32px); margin: 16px; aspect-ratio: 3 / 1; height: auto;
+    background: #fff; border: 1px dashed var(--line-strong); border-radius: 5px; cursor: crosshair; touch-action: none;
+  }
+  .dlg-row { display: flex; align-items: center; gap: 6px; padding: 0 16px 14px; }
+  .pen { width: 30px; padding: 0; justify-content: center; }
+  .pen span { width: 14px; height: 14px; border-radius: 50%; }
+  .pen.on { border-color: var(--line-strong); background: var(--pressed); }
 </style>
 </head>
 <body>
@@ -188,9 +257,10 @@
 
   <div class="sep"></div>
   <div class="seg" role="group" aria-label="Mode">
-    <button id="modeEdit" class="on" title="Click existing text to change it"><span>Edit</span></button>
-    <button id="modeAdd" title="Click anywhere on a page to add new text"><span>Add text</span></button>
-    <button id="modeMove" title="Drag text to move it (arrow keys nudge the selected text)"><span>Move</span></button>
+    <button id="modeEdit" class="on" title="Click existing text to change it">Edit</button>
+    <button id="modeAdd" title="Click anywhere on a page to add new text">Add text</button>
+    <button id="modeMove" title="Drag text to move it; Shift+click or double-click to select several">Move</button>
+    <button id="modeRedact" title="Drag over anything to black it out">Redact</button>
   </div>
 
   <div class="sep"></div>
@@ -202,13 +272,39 @@
 
   <div class="sep"></div>
   <div class="group">
-    <button id="dup" disabled title="Copy the selected text with the same style (Ctrl+D)"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span class="lbl">Duplicate</span></button>
-    <button id="del" disabled title="Remove the selected text"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg><span class="lbl">Delete</span></button>
+    <button id="dup" disabled title="Copy the selected text or image with the same style (Ctrl+D)"><svg class="i" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="1.5"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/></svg><span class="lbl">Duplicate</span></button>
+    <button id="del" disabled title="Remove the selection (Delete)"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg><span class="lbl">Delete</span></button>
+  </div>
+
+  <div class="sep"></div>
+  <div class="group">
+    <label class="btn" for="imgInput" title="Insert an image (PNG, JPG…)"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg><span class="lbl">Image</span></label>
+    <input type="file" id="imgInput" accept="image/*" hidden>
+    <button id="sigBtn" title="Draw a signature and place it"><svg class="i" viewBox="0 0 24 24"><path d="M3 16c2.5-.5 3.5-6 5.5-6s1 5 3 5 2.5-3 3.5-3 1.5 2.5 3 2.5"/><path d="M3 20h18"/></svg><span class="lbl">Signature</span></button>
+    <button id="findBtn" title="Find &amp; replace (Ctrl+F)"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="lbl">Find</span></button>
   </div>
 
   <div class="spacer"></div>
+  <div class="zoom" role="group" aria-label="Zoom">
+    <button id="zoomOut" class="icon" title="Zoom out (Ctrl −)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+    <button id="zoomLbl" class="mono" title="Reset to 100% (Ctrl 0)">100%</button>
+    <button id="zoomIn" class="icon" title="Zoom in (Ctrl +)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"/></svg></button>
+  </div>
   <button id="download" class="primary" disabled title="Save the edited PDF">Download PDF</button>
 </header>
+
+<div id="findbar" hidden>
+  <input type="text" id="findQ" placeholder="Find" spellcheck="false" autocomplete="off">
+  <input type="text" id="findR" placeholder="Replace with" spellcheck="false" autocomplete="off">
+  <label class="check"><input type="checkbox" id="findCase"> Match case</label>
+  <button id="findPrev" class="icon" title="Previous (Shift+Enter)"><svg class="i" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+  <button id="findNext" class="icon" title="Next (Enter)"><svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+  <span id="findCount" class="mono"></span>
+  <div class="spacer"></div>
+  <button id="findOne">Replace</button>
+  <button id="findAll">Replace all</button>
+  <button id="findClose" class="icon" title="Close (Esc)"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+</div>
 
 <main>
   <div id="drop">
@@ -221,44 +317,124 @@
   <div id="pages"></div>
 </main>
 
+<div id="arrange">
+  <span id="arCount" class="mono">Nothing selected</span>
+  <button id="arLine" disabled title="Select every piece on the same line">Select line</button>
+  <div class="sep"></div>
+  <button id="arLeft" disabled title="Line up left edges">Align left</button>
+  <button id="arRight" disabled title="Line up right edges">Align right</button>
+  <button id="arBase" disabled title="Put them on the same baseline">Same line</button>
+  <button id="arJoin" disabled title="Merge into one piece of text">Join</button>
+</div>
+
 <footer>
   <span class="status" id="status">No document</span>
-  <span class="hint" id="hint">Click text to edit it</span>
+  <span class="hint" id="hint">Click text to edit it · Ctrl+F find &amp; replace</span>
 </footer>
 <div id="toast"></div>
+
+<dialog id="sigDlg">
+  <form method="dialog">
+    <div class="dlg-head">Draw your signature</div>
+    <canvas id="sigPad" width="1200" height="400"></canvas>
+    <div class="dlg-row">
+      <button type="button" class="pen on" data-c="#111111" title="Black"><span style="background:#111111"></span></button>
+      <button type="button" class="pen" data-c="#1d3fbb" title="Blue"><span style="background:#1d3fbb"></span></button>
+      <button type="button" id="sigClear">Clear</button>
+      <div class="spacer"></div>
+      <button value="cancel">Cancel</button>
+      <button value="ok" id="sigOk" class="primary" disabled>Insert</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const { PDFDocument, StandardFonts, rgb } = PDFLib;
 
 const $ = id => document.getElementById(id);
-const pagesEl = $('pages'), dropEl = $('drop');
-const state = { bytes: null, name: 'document.pdf', pages: [], boxes: [], mode: 'edit', selected: null, undo: [], redo: [], noMerge: false };
+const pagesEl = $('pages'), dropEl = $('drop'), mainEl = document.querySelector('main');
+const state = {
+  bytes: null, name: 'document.pdf', pages: [], order: [], boxes: [], shapes: [], fonts: {},
+  mode: 'edit', selected: null, sel: new Set(), shape: null,
+  undo: [], redo: [], batch: null, noMerge: false, zoom: 1,
+};
 
 // ---------- loading ----------
 $('fileInput').addEventListener('change', e => { if (e.target.files[0]) loadPdf(e.target.files[0]); e.target.value = ''; });
 ['dragover', 'dragenter'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); dropEl.classList.add('drag'); }));
 ['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); dropEl.classList.remove('drag'); }));
 document.addEventListener('drop', e => {
-  const f = [...e.dataTransfer.files].find(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
-  if (f) loadPdf(f); else toast('Please drop a PDF file');
+  const files = [...e.dataTransfer.files];
+  const pdf = files.find(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+  const img = files.find(f => f.type.startsWith('image/'));
+  if (pdf) loadPdf(pdf);
+  else if (img && state.pages.length) insertImageFile(img);
+  else toast('Please drop a PDF file');
 });
+
+// Canvas pixels per layout pixel: sharp at the current zoom, capped at ~16 megapixels per page
+const renderRatio = vp => Math.min((window.devicePixelRatio || 1) * state.zoom, Math.sqrt(16e6 / (vp.width * vp.height)));
+
+// (Re)draw a page into a fresh canvas and swap it in, so zooming never flashes a blank page
+async function renderPage(p) {
+  const k = renderRatio(p.vp);
+  if (p.k === k && p.canvas) return p.canvas;
+  p.task?.cancel();
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.floor(p.vp.width * k);
+  canvas.height = Math.floor(p.vp.height * k);
+  canvas.style.width = p.vp.width + 'px';
+  canvas.style.height = p.vp.height + 'px';
+  const task = p.task = p.pdfPage.render({ canvasContext: canvas.getContext('2d'), viewport: p.vp, transform: [k, 0, 0, k, 0, 0] });
+  try { await task.promise; } catch (err) { if (err?.name === 'RenderingCancelledException') return null; throw err; }
+  if (p.task === task) p.task = null;
+  if (p.canvas) p.canvas.replaceWith(canvas); else p.wrap.prepend(canvas);
+  p.canvas = canvas; p.k = k;
+  return canvas;
+}
+
+const PAGE_ICONS = {
+  up: '<svg class="i" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>',
+  down: '<svg class="i" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>',
+  rot: '<svg class="i" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v5h-5"/></svg>',
+  del: '<svg class="i" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12"/><path d="M9 7V4h6v3"/></svg>',
+};
+
+// Each page lives in a slot: a header (page number + page tools) above a frame that holds the page
+function buildSlot(idx, vp) {
+  const slot = document.createElement('div');
+  slot.className = 'slot';
+  slot.dataset.page = idx;
+  slot.innerHTML = `<div class="phead"><span class="pnum"></span><div class="ptools">
+      <button data-act="up" title="Move page up">${PAGE_ICONS.up}</button>
+      <button data-act="down" title="Move page down">${PAGE_ICONS.down}</button>
+      <button data-act="rot" title="Rotate page 90°">${PAGE_ICONS.rot}</button>
+      <button data-act="del" title="Delete page">${PAGE_ICONS.del}</button>
+    </div></div><div class="pframe"><div class="page"><div class="layer"></div></div></div>`;
+  const wrap = slot.querySelector('.page'), layer = slot.querySelector('.layer');
+  wrap.style.width = vp.width + 'px';
+  wrap.style.height = vp.height + 'px';
+  layer.dataset.page = idx;
+  return { slot, wrap, layer, frame: slot.querySelector('.pframe'), num: slot.querySelector('.pnum') };
+}
 
 async function loadPdf(file) {
   status('Loading…');
   try {
-    state.bytes = new Uint8Array(await file.arrayBuffer());
-    state.name = file.name;
-    state.boxes = []; state.pages = []; select(null);
-    state.undo = []; state.redo = []; updateUndoButtons();
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    // fontExtraProperties keeps each font's character map so edits can reuse the PDF's own fonts
+    const doc = await pdfjsLib.getDocument({ data: bytes.slice(), fontExtraProperties: true }).promise;
+    for (const p of state.pages) p.task?.cancel();
+    closeFind();
+    clearSel();
+    Object.assign(state, { bytes, name: file.name, pages: [], order: [], boxes: [], shapes: [], fonts: {}, undo: [], redo: [], batch: null });
+    updateToolbar(); updateUndoButtons();
     pagesEl.innerHTML = '';
     dropEl.style.display = 'none';
+    document.body.classList.add('has-doc');
 
-    state.fonts = {};
-    // fontExtraProperties keeps each font's character map so edits can reuse the PDF's own fonts
-    const doc = await pdfjsLib.getDocument({ data: state.bytes.slice(), fontExtraProperties: true }).promise;
-    const avail = Math.min(pagesEl.clientWidth - 32, 1000);
-    const dpr = window.devicePixelRatio || 1;
+    const avail = Math.min(mainEl.clientWidth - 32, 1000);
     let textCount = 0;
 
     for (let i = 1; i <= doc.numPages; i++) {
@@ -266,28 +442,13 @@ async function loadPdf(file) {
       const page = await doc.getPage(i);
       const scale = avail / page.getViewport({ scale: 1 }).width;
       const vp = page.getViewport({ scale });
+      const p = { vp, scale, pdfPage: page, rot: 0, deleted: false, ...buildSlot(i - 1, vp) };
+      state.pages.push(p);
+      state.order.push(i - 1);
+      pagesEl.append(p.slot);
+      layoutPages();
 
-      const wrap = document.createElement('div');
-      wrap.className = 'page';
-      wrap.style.width = vp.width + 'px';
-      wrap.style.height = vp.height + 'px';
-      wrap.innerHTML = `<span class="pnum">${i} / ${doc.numPages}</span>`;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.floor(vp.width * dpr);
-      canvas.height = Math.floor(vp.height * dpr);
-      canvas.style.width = vp.width + 'px';
-      canvas.style.height = vp.height + 'px';
-      const layer = document.createElement('div');
-      layer.className = 'layer';
-      layer.dataset.page = i - 1;
-      wrap.append(canvas, layer);
-      pagesEl.append(wrap);
-
-      await page.render({
-        canvasContext: canvas.getContext('2d'), viewport: vp,
-        transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
-      }).promise;
-      state.pages.push({ vp, scale, layer });
+      const canvas = await renderPage(p), k = p.k;
       const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
 
       const tc = await page.getTextContent();
@@ -304,7 +465,7 @@ async function loadPdf(file) {
           state.fonts[item.fontName] = prepFont(fo);
         }
         const width = item.width * scale;
-        const { ink: color, bg } = inkColor(pixels, tx[4] * dpr, (tx[5] - fontPx * 0.8) * dpr, (tx[4] + width) * dpr, (tx[5] + fontPx * 0.1) * dpr);
+        const { ink: color, bg } = inkColor(pixels, tx[4] * k, (tx[5] - fontPx * 0.8) * k, (tx[4] + width) * k, (tx[5] + fontPx * 0.1) * k);
         addBox({
           page: i - 1, left: tx[4], baseline: tx[5], fontPx, text: item.str, font: item.fontName,
           family: info.family, bold: info.bold, italic: info.italic, color,
@@ -324,11 +485,14 @@ async function loadPdf(file) {
     }
     $('download').disabled = false;
     status(`${doc.numPages} page${doc.numPages > 1 ? 's' : ''} · ${file.name}`);
-    if (!textCount) toast('No editable text found (this may be a scanned PDF). You can still add new text.', 5000);
+    if (!textCount) toast('No editable text found (this may be a scanned PDF). You can still add text, images and redactions.', 5000);
   } catch (err) {
     console.error(err);
-    status('No document');
-    dropEl.style.display = '';
+    if (!state.pages.length) {
+      status('No document');
+      dropEl.style.display = '';
+      document.body.classList.remove('has-doc');
+    }
     toast('Could not open this PDF: ' + err.message, 5000);
   }
 }
@@ -511,36 +675,64 @@ function removeBox(box) {
     box.deleted = true; box.el.remove(); box.preview?.remove(); box.preview = null;
     state.boxes = state.boxes.filter(b => b !== box);
   }
-  if (state.selected === box) select(null);
+  deselect(box);
   commit(box, null);
 }
 
 // ---------- undo / redo ----------
-// Each history entry stores a box's state before and after one change (null = box doesn't exist).
+// History entries: a text change { box, before, after }, a custom step { undo(), redo() },
+// or a { group } of entries that undo together.
 const snap = box => box.deleted ? null
   : { left: box.left, baseline: box.baseline, fontPx: box.fontPx, text: box.text, bold: box.bold, color: box.color, dirty: box.dirty };
 
-// Rapid changes of the same kind to the same box (typing, size spinner, nudges) merge into one step.
+function pushEntry(entry) {
+  if (state.batch) { state.batch.push(entry); return; }
+  state.undo.push(entry);
+  state.noMerge = false;
+  state.redo.length = 0;
+  updateUndoButtons();
+}
+
+// Rapid changes of the same kind to the same box (typing, size spinner) merge into one step.
 function commit(box, key) {
   const before = box.last, after = snap(box);
   if (JSON.stringify(before) === JSON.stringify(after)) return;
-  const last = state.undo[state.undo.length - 1], now = Date.now();
-  if (key && !state.noMerge && last && last.box === box && last.key === key && now - last.t < 1000) {
-    last.after = after; last.t = now;
-  } else {
-    state.undo.push({ box, before, after, key, t: now });
-  }
-  state.noMerge = false;
-  state.redo.length = 0;
   box.last = after;
-  updateUndoButtons();
+  const last = state.undo[state.undo.length - 1], now = Date.now();
+  if (!state.batch && key && !state.noMerge && last && last.box === box && last.key === key && now - last.t < 1000) {
+    last.after = after; last.t = now;
+    return;
+  }
+  pushEntry({ box, before, after, key, t: now });
+}
+
+// Changes made between beginBatch() and endBatch() undo as one step. Repeats with the same key
+// on the same boxes (nudging, the size spinner) merge into that step.
+function beginBatch() { state.batch = []; }
+function endBatch(key) {
+  const g = state.batch;
+  state.batch = null;
+  if (!g || !g.length) return;
+  const last = state.undo[state.undo.length - 1], now = Date.now();
+  if (key && !state.noMerge && last?.group && last.key === key && now - last.t < 1000
+      && last.group.length === g.length && last.group.every((e, i) => e.box && e.box === g[i].box)) {
+    last.group.forEach((e, i) => { e.after = g[i].after; });
+    last.t = now;
+    return;
+  }
+  pushEntry({ group: g, key, t: now });
+}
+
+function pushOp(undoFn, redoFn) {
+  pushEntry({ undo: undoFn, redo: redoFn, t: Date.now() });
+  updateStatusCount();
 }
 
 function restore(box, s) {
   if (!s) {
     box.deleted = true; box.el.remove(); box.preview?.remove(); box.preview = null;
     state.boxes = state.boxes.filter(b => b !== box);
-    if (state.selected === box) select(null);
+    deselect(box);
   } else {
     if (box.deleted) { box.deleted = false; state.pages[box.page].layer.append(box.el); state.boxes.push(box); }
     Object.assign(box, s);
@@ -551,23 +743,33 @@ function restore(box, s) {
     box.el.classList.toggle('dirty', box.dirty);
     if (box.cover) box.cover.classList.toggle('on', box.dirty);
     styleBox(box);
-    if (state.selected === box) select(box);
+    if (state.sel.has(box)) updateToolbar();
   }
   box.last = s;
   updateStatusCount();
 }
 
+function applyUndo(h) {
+  if (h.group) for (let i = h.group.length - 1; i >= 0; i--) applyUndo(h.group[i]);
+  else if (h.undo) h.undo();
+  else restore(h.box, h.before);
+}
+function applyRedo(h) {
+  if (h.group) h.group.forEach(applyRedo);
+  else if (h.redo) h.redo();
+  else restore(h.box, h.after);
+}
 function undo() {
   const h = state.undo.pop();
   if (!h) return toast('Nothing to undo');
-  restore(h.box, h.before);
-  state.redo.push(h); state.noMerge = true; updateUndoButtons();
+  applyUndo(h);
+  state.redo.push(h); state.noMerge = true; updateUndoButtons(); refreshFind();
 }
 function redo() {
   const h = state.redo.pop();
   if (!h) return toast('Nothing to redo');
-  restore(h.box, h.after);
-  state.undo.push(h); state.noMerge = true; updateUndoButtons();
+  applyRedo(h);
+  state.undo.push(h); state.noMerge = true; updateUndoButtons(); refreshFind();
 }
 function updateUndoButtons() {
   $('undo').disabled = !state.undo.length;
@@ -582,68 +784,156 @@ $('undo').addEventListener('mousedown', e => e.preventDefault());
 $('redo').addEventListener('mousedown', e => e.preventDefault());
 $('undo').addEventListener('click', undo);
 $('redo').addEventListener('click', redo);
+
+// True while the user is typing somewhere that should keep its own keyboard behaviour
+const isTyping = e => e.target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || $('sigDlg').open;
+
 document.addEventListener('keydown', e => {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
   const k = e.key.toLowerCase();
+  if (e.target.closest?.('#findbar') && (k === 'z' || k === 'y')) return; // let the find inputs undo their own text
   if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
   else if (k === 'y' || (k === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
+  else if (k === 'f' && state.pages.length) { e.preventDefault(); openFind(); }
+  else if ((k === '=' || k === '+') && state.pages.length) { e.preventDefault(); zoomStep(1); }
+  else if (k === '-' && state.pages.length) { e.preventDefault(); zoomStep(-1); }
+  else if (k === '0' && state.pages.length) { e.preventDefault(); setZoom(1); }
 }, true);
 
-// ---------- toolbar ----------
-function select(box) {
-  if (state.selected) state.selected.el.classList.remove('sel');
-  state.selected = box;
-  if (box) box.el.classList.add('sel');
-  const on = !!box;
-  ['size', 'bold', 'color', 'dup', 'del'].forEach(id => $(id).disabled = !on);
-  if (on) {
-    const scale = state.pages[box.page].scale;
-    $('size').value = Math.round(box.fontPx / scale * 2) / 2;
-    $('bold').classList.toggle('on', box.bold);
-    $('color').value = box.color;
+// Delete removes the selection, Escape clears it (when not typing)
+document.addEventListener('keydown', e => {
+  if (isTyping(e)) return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && (state.shape || (state.mode === 'move' && state.sel.size))) {
+    e.preventDefault(); deleteSelection();
+  } else if (e.key === 'Escape') {
+    clearSel(); updateToolbar();
   }
+});
+
+// ---------- selection ----------
+// state.sel holds the selected text pieces (several only in Move mode, all on one page);
+// state.selected is the one the style controls show. state.shape is a selected image/redaction.
+function clearSel() {
+  for (const b of state.sel) b.el.classList.remove('sel');
+  state.sel.clear();
+  state.selected = null;
+  if (state.shape) { state.shape.el.classList.remove('sel'); state.shape = null; }
 }
+
+function select(box, additive = false) {
+  if (!additive || state.shape || (box && [...state.sel].some(b => b.page !== box.page))) clearSel();
+  if (box && additive && state.sel.has(box)) {
+    state.sel.delete(box); box.el.classList.remove('sel');
+    box = [...state.sel].pop() || null;
+  } else if (box) {
+    state.sel.add(box); box.el.classList.add('sel');
+  }
+  state.selected = box;
+  updateToolbar();
+}
+
+function selectMany(boxes) {
+  clearSel();
+  for (const b of boxes) { state.sel.add(b); b.el.classList.add('sel'); }
+  state.selected = boxes[0] || null;
+  updateToolbar();
+}
+
+function deselect(box) {
+  if (!state.sel.delete(box)) return;
+  box.el.classList.remove('sel');
+  if (state.selected === box) state.selected = [...state.sel].pop() || null;
+  updateToolbar();
+}
+
+function selectShape(s) {
+  clearSel();
+  state.shape = s;
+  if (s) s.el.classList.add('sel');
+  updateToolbar();
+}
+
+function updateToolbar() {
+  const b = state.selected, n = state.sel.size;
+  ['size', 'bold', 'color'].forEach(id => $(id).disabled = !b);
+  $('dup').disabled = !b && !state.shape;
+  $('del').disabled = !n && !state.shape;
+  if (b) {
+    $('size').value = Math.round(b.fontPx / state.pages[b.page].scale * 2) / 2;
+    $('bold').classList.toggle('on', b.bold);
+    $('color').value = b.color;
+  }
+  $('arLine').disabled = n !== 1;
+  ['arLeft', 'arRight', 'arBase', 'arJoin'].forEach(id => $(id).disabled = n < 2);
+  $('arCount').textContent = n ? `${n} selected` : 'Nothing selected';
+}
+
+// ---------- toolbar ----------
+const targets = () => state.sel.size ? [...state.sel] : state.selected ? [state.selected] : [];
 
 // Keep focus in the text when clicking toolbar buttons
 ['bold', 'dup', 'del'].forEach(id => $(id).addEventListener('mousedown', e => e.preventDefault()));
 
 $('size').addEventListener('input', () => {
-  const box = state.selected, v = parseFloat($('size').value);
-  if (!box || !(v > 0)) return;
-  box.fontPx = v * state.pages[box.page].scale;
-  styleBox(box); markDirty(box); commit(box, 'size');
+  const v = parseFloat($('size').value), t = targets();
+  if (!t.length || !(v > 0)) return;
+  beginBatch();
+  for (const b of t) { b.fontPx = v * state.pages[b.page].scale; styleBox(b); markDirty(b); commit(b, null); }
+  endBatch('size');
 });
 $('bold').addEventListener('click', () => {
-  const box = state.selected; if (!box) return;
-  box.bold = !box.bold; $('bold').classList.toggle('on', box.bold);
-  styleBox(box); markDirty(box); commit(box, null);
+  const t = targets(); if (!t.length) return;
+  const on = !state.selected.bold;
+  beginBatch();
+  for (const b of t) { b.bold = on; styleBox(b); markDirty(b); commit(b, null); }
+  endBatch();
+  $('bold').classList.toggle('on', on);
 });
 $('color').addEventListener('input', () => {
-  const box = state.selected; if (!box) return;
-  box.color = $('color').value; styleBox(box); markDirty(box); commit(box, 'color');
+  const t = targets(); if (!t.length) return;
+  beginBatch();
+  for (const b of t) { b.color = $('color').value; styleBox(b); markDirty(b); commit(b, null); }
+  endBatch('color');
 });
-$('del').addEventListener('click', () => { if (state.selected) removeBox(state.selected); });
+$('del').addEventListener('click', deleteSelection);
 
+function deleteSelection() {
+  if (state.shape) return deleteShape(state.shape);
+  const t = targets(); if (!t.length) return;
+  beginBatch();
+  t.forEach(removeBox);
+  endBatch();
+}
+
+const HINTS = {
+  edit: 'Click text to edit it · Ctrl+F find & replace',
+  add: 'Click on a page to add text',
+  move: 'Drag to move · Shift+click selects several · double-click selects a line · Alt turns off snapping',
+  redact: 'Drag over anything to black it out · redacted pages are flattened on download',
+};
 function setMode(m) {
   state.mode = m;
-  $('modeEdit').classList.toggle('on', m === 'edit');
-  $('modeAdd').classList.toggle('on', m === 'add');
-  $('modeMove').classList.toggle('on', m === 'move');
-  document.body.classList.toggle('add', m === 'add');
-  document.body.classList.toggle('move', m === 'move');
-  $('hint').textContent = {
-    edit: 'Click text to edit it',
-    add: 'Click on a page to add text',
-    move: 'Drag to move · Shift locks direction · Alt turns off snapping',
-  }[m];
-  if (m === 'move' && document.activeElement?.classList.contains('box')) document.activeElement.blur();
+  [['modeEdit', 'edit'], ['modeAdd', 'add'], ['modeMove', 'move'], ['modeRedact', 'redact']]
+    .forEach(([id, k]) => $(id).classList.toggle('on', m === k));
+  ['add', 'move', 'redact'].forEach(k => document.body.classList.toggle(k, m === k));
+  $('hint').textContent = HINTS[m];
+  if (m !== 'edit' && document.activeElement?.classList.contains('box')) document.activeElement.blur();
+  if (m !== 'move' && state.sel.size > 1) select(state.selected);
 }
 $('modeEdit').addEventListener('click', () => setMode('edit'));
 $('modeAdd').addEventListener('click', () => setMode('add'));
 $('modeMove').addEventListener('click', () => setMode('move'));
+$('modeRedact').addEventListener('click', () => setMode('redact'));
 
 // ---------- moving & aligning ----------
 const SNAP_PX = 6;
+
+// Screen pixels per layout pixel for a page (the zoom level), and pointer position in page layout px
+const scaleOf = layer => layer.getBoundingClientRect().width / layer.offsetWidth || 1;
+function toLayer(e, layer) {
+  const r = layer.getBoundingClientRect(), z = scaleOf(layer);
+  return { x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z };
+}
 
 function guide(layer, dir) {
   const key = '_guide' + dir;
@@ -670,70 +960,143 @@ function nearest(targets, edges) {
   return best;
 }
 
-// Drag a text box: snaps its left/right edge and baseline to other text on the page.
-// Shift = move in one direction only, Alt = no snapping.
+// The pieces of text that make up the visual line containing `box`: same baseline, no big gaps
+function lineOf(box) {
+  const tol = box.fontPx * 0.35, right = b => b.left + b.el.offsetWidth;
+  const row = state.boxes
+    .filter(b => b.page === box.page && !b.deleted && b.text.trim() && Math.abs(b.baseline - box.baseline) < tol)
+    .sort((a, b) => a.left - b.left);
+  let lo = row.indexOf(box), hi = lo;
+  while (lo > 0 && row[lo].left - right(row[lo - 1]) < box.fontPx * 1.2) lo--;
+  while (hi < row.length - 1 && row[hi + 1].left - right(row[hi]) < box.fontPx * 1.2) hi++;
+  return row.slice(lo, hi + 1);
+}
+
+// Clicking empty page space clears the selection; in Move mode, pressing on text selects and drags it.
+// The whole selection moves together; its edges snap to other text (Shift = one direction, Alt = no snapping).
 pagesEl.addEventListener('pointerdown', e => {
-  if (state.mode !== 'move' || !e.target.classList.contains('box')) return;
+  const t = e.target;
+  if (t.classList.contains('layer')) {
+    if (state.mode === 'edit' || state.mode === 'move') { clearSel(); updateToolbar(); }
+    return;
+  }
+  if (state.mode !== 'move' || !t.classList.contains('box')) return;
   e.preventDefault(); // don't start editing
-  const box = e.target._box, el = box.el;
-  select(box);
-  const layer = state.pages[box.page].layer;
-  const xs = [], ys = [];
+  const box = t._box;
+  if (e.shiftKey) return select(box, true);
+  if (!state.sel.has(box)) select(box);
+  else { state.selected = box; updateToolbar(); }
+
+  const group = [...state.sel], layer = state.pages[box.page].layer, z = scaleOf(layer);
+  const xs = [layer.clientWidth / 2], ys = [];
   for (const b of state.boxes) {
-    if (b === box || b.page !== box.page || !b.text.trim()) continue;
+    if (state.sel.has(b) || b.page !== box.page || !b.text.trim()) continue;
     xs.push(b.left, b.left + b.el.offsetWidth);
     ys.push(b.baseline);
   }
-  xs.push(layer.clientWidth / 2); // page centre
-  const startX = e.clientX, startY = e.clientY, left0 = box.left, base0 = box.baseline;
+  const start = group.map(b => ({ b, left: b.left, base: b.baseline, w: b.el.offsetWidth }));
+  const minL = Math.min(...start.map(s => s.left)), maxR = Math.max(...start.map(s => s.left + s.w));
+  const minT = Math.min(...start.map(s => s.base - s.b.fontPx)), maxB = Math.max(...start.map(s => s.base));
+  const base0 = box.baseline, startX = e.clientX, startY = e.clientY;
   let moved = false;
-  el.setPointerCapture(e.pointerId);
+  box.el.setPointerCapture(e.pointerId);
 
   const onMove = ev => {
-    let dx = ev.clientX - startX, dy = ev.clientY - startY;
+    let dx = (ev.clientX - startX) / z, dy = (ev.clientY - startY) / z;
     if (!moved && Math.hypot(dx, dy) < 2) return;
     moved = true;
     if (ev.shiftKey) { if (Math.abs(dx) > Math.abs(dy)) dy = 0; else dx = 0; }
-    const w = el.offsetWidth;
-    let L = left0 + dx, B = base0 + dy, gx = null, gy = null;
+    let gx = null, gy = null;
     if (!ev.altKey) {
       if (dx !== 0 || !ev.shiftKey) {
-        const sx = nearest(xs, [L, L + w, L + w / 2]);
-        if (sx) { L += sx.shift; gx = sx.at; }
+        const sx = nearest(xs, [minL + dx, maxR + dx, (minL + maxR) / 2 + dx]);
+        if (sx) { dx += sx.shift; gx = sx.at; }
       }
       if (dy !== 0 || !ev.shiftKey) {
-        const sy = nearest(ys, [B]);
-        if (sy) { B += sy.shift; gy = sy.at; }
+        const sy = nearest(ys, [base0 + dy]);
+        if (sy) { dy += sy.shift; gy = sy.at; }
       }
     }
-    box.left = Math.max(0, Math.min(layer.clientWidth - w, L));
-    box.baseline = Math.max(box.fontPx, Math.min(layer.clientHeight, B));
-    styleBox(box);
+    dx = Math.max(-minL, Math.min(layer.clientWidth - maxR, dx));
+    dy = Math.max(-minT, Math.min(layer.clientHeight - maxB, dy));
+    for (const s of start) { s.b.left = s.left + dx; s.b.baseline = s.base + dy; styleBox(s.b); }
     showGuides(layer, gx, gy);
   };
   const onUp = () => {
-    el.removeEventListener('pointermove', onMove);
-    el.removeEventListener('pointerup', onUp);
-    el.removeEventListener('pointercancel', onUp);
+    box.el.removeEventListener('pointermove', onMove);
+    box.el.removeEventListener('pointerup', onUp);
+    box.el.removeEventListener('pointercancel', onUp);
     showGuides(layer, null, null);
-    if (moved) { markDirty(box); commit(box, null); }
+    if (moved) { beginBatch(); for (const b of group) { markDirty(b); commit(b, null); } endBatch(); }
   };
-  el.addEventListener('pointermove', onMove);
-  el.addEventListener('pointerup', onUp);
-  el.addEventListener('pointercancel', onUp);
+  box.el.addEventListener('pointermove', onMove);
+  box.el.addEventListener('pointerup', onUp);
+  box.el.addEventListener('pointercancel', onUp);
 });
 
-// Arrow keys nudge the selected box in move mode (Shift = 10px)
+// Double-click in Move mode selects the whole line
+pagesEl.addEventListener('dblclick', e => {
+  if (state.mode === 'move' && e.target.classList.contains('box')) selectMany(lineOf(e.target._box));
+});
+
+function arrange(kind) {
+  const g = [...state.sel];
+  if (g.length < 2) return;
+  const w = b => b.el.offsetWidth;
+  const L = Math.min(...g.map(b => b.left)), R = Math.max(...g.map(b => b.left + w(b))), B = state.selected.baseline;
+  beginBatch();
+  for (const b of g) {
+    if (kind === 'left') b.left = L;
+    else if (kind === 'right') b.left = R - w(b);
+    else b.baseline = B;
+    styleBox(b); markDirty(b); commit(b, null);
+  }
+  endBatch();
+}
+
+// Merge the selected pieces (left to right) into the first one, so a line can be edited as one
+function joinSelection() {
+  const g = [...state.sel].sort((a, b) => a.left - b.left);
+  if (g.length < 2) return;
+  const first = g[0];
+  let text = first.text, prevRight = first.left + first.el.offsetWidth;
+  for (const b of g.slice(1)) {
+    text += (b.left - prevRight > first.fontPx * 0.15 && !/\s$/.test(text) ? ' ' : '') + b.text;
+    prevRight = b.left + b.el.offsetWidth;
+  }
+  beginBatch();
+  g.slice(1).forEach(removeBox);
+  first.text = text; first.el.textContent = text;
+  markDirty(first); styleBox(first); commit(first, null);
+  endBatch();
+  selectMany([first]);
+  toast('Joined into one piece — switch to Edit to change it');
+}
+
+$('arLine').addEventListener('click', () => { if (state.selected) selectMany(lineOf(state.selected)); });
+$('arLeft').addEventListener('click', () => arrange('left'));
+$('arRight').addEventListener('click', () => arrange('right'));
+$('arBase').addEventListener('click', () => arrange('base'));
+$('arJoin').addEventListener('click', joinSelection);
+
+// Arrow keys nudge the selection (Shift = 10px): text in Move mode, or a selected image/redaction
 document.addEventListener('keydown', e => {
-  const box = state.selected;
-  if (state.mode !== 'move' || !box || !e.key.startsWith('Arrow')) return;
-  e.preventDefault();
+  if (!e.key.startsWith('Arrow') || isTyping(e)) return;
   const d = e.shiftKey ? 10 : 1;
-  if (e.key === 'ArrowLeft') box.left -= d;
-  if (e.key === 'ArrowRight') box.left += d;
-  if (e.key === 'ArrowUp') box.baseline -= d;
-  if (e.key === 'ArrowDown') box.baseline += d;
-  styleBox(box); markDirty(box); commit(box, 'nudge');
+  const dx = e.key === 'ArrowLeft' ? -d : e.key === 'ArrowRight' ? d : 0;
+  const dy = e.key === 'ArrowUp' ? -d : e.key === 'ArrowDown' ? d : 0;
+  if (state.shape) {
+    e.preventDefault();
+    const s = state.shape, before = shapeSnap(s);
+    s.left += dx; s.top += dy; styleShape(s);
+    recordShape(s, before);
+    return;
+  }
+  if (state.mode !== 'move' || !state.sel.size) return;
+  e.preventDefault();
+  beginBatch();
+  for (const b of state.sel) { b.left += dx; b.baseline += dy; styleBox(b); markDirty(b); commit(b, null); }
+  endBatch('nudge');
 });
 
 // Add-text mode: click empty space on a page to drop a new text box
@@ -742,19 +1105,30 @@ pagesEl.addEventListener('mousedown', e => {
   e.preventDefault();
   const pageIdx = +e.target.dataset.page;
   const p = state.pages[pageIdx];
-  const r = e.target.getBoundingClientRect();
+  const { x, y } = toLayer(e, e.target);
   // New text always starts plain (12pt, black, regular); use Duplicate to copy an existing style
   const fontPx = 12 * p.scale;
   const box = addBox({
-    page: pageIdx, left: e.clientX - r.left, baseline: e.clientY - r.top + fontPx * 0.6, fontPx, text: '', orig: null,
+    page: pageIdx, left: x, baseline: y + fontPx * 0.6, fontPx, text: '', orig: null,
     family: 'sans', bold: false, italic: false, color: '#000000',
   });
   markDirty(box);
-  setTimeout(() => box.el.focus(), 0);
+  box.el.focus(); // mousedown's default is prevented, so focus can move right away
 });
 
-// Duplicate: copy the selected text with exactly the same font, size and colour, just below it
+// Duplicate: copy the selected text with exactly the same font, size and colour just below it,
+// or the selected image/redaction slightly offset
 function duplicate() {
+  if (state.shape) {
+    const s0 = state.shape, layer = state.pages[s0.page].layer;
+    const s = addShape({
+      kind: s0.kind, page: s0.page, src: s0.src, mime: s0.mime, bytes: s0.bytes, w: s0.w, h: s0.h,
+      left: Math.min(s0.left + 14, layer.clientWidth - s0.w), top: Math.min(s0.top + 14, layer.clientHeight - s0.h),
+    });
+    recordShape(s, { ...shapeSnap(s), deleted: true });
+    selectShape(s);
+    return;
+  }
   const src = state.selected;
   if (!src || src.deleted || !src.text.trim()) return toast('Select some text to duplicate');
   const layer = state.pages[src.page].layer;
@@ -780,6 +1154,407 @@ $('dup').addEventListener('click', duplicate);
 document.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') { e.preventDefault(); duplicate(); }
 }, true);
+
+// ---------- find & replace ----------
+// Searches each piece of text separately (a phrase split across pieces isn't found; Join them first).
+const find = { hits: [], i: -1 };
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function findRe() {
+  const q = $('findQ').value;
+  return q ? new RegExp(escapeRe(q), 'g' + ($('findCase').checked ? '' : 'i')) : null;
+}
+function openFind() {
+  if (!state.pages.length) return;
+  $('findbar').hidden = false;
+  $('findQ').focus(); $('findQ').select();
+  refreshFind();
+}
+function closeFind() {
+  $('findbar').hidden = true;
+  for (const b of find.hits) b.el.classList.remove('match', 'cur');
+  find.hits = []; find.i = -1;
+}
+function refreshFind() {
+  if ($('findbar').hidden) return;
+  for (const b of find.hits) b.el.classList.remove('match', 'cur');
+  const re = findRe();
+  let total = 0;
+  find.hits = [];
+  if (re) for (const pi of state.order) {
+    if (state.pages[pi].deleted) continue;
+    const onPage = state.boxes.filter(b => b.page === pi && !b.deleted)
+      .sort((a, b) => a.baseline - b.baseline || a.left - b.left);
+    for (const b of onPage) {
+      const n = (b.text.match(re) || []).length;
+      if (n) { find.hits.push(b); total += n; b.el.classList.add('match'); }
+    }
+  }
+  if (find.i >= find.hits.length) find.i = find.hits.length - 1;
+  if (find.i >= 0) find.hits[find.i].el.classList.add('cur');
+  $('findCount').textContent = !re ? '' : !total ? 'No matches'
+    : (find.i >= 0 ? `${find.i + 1}/${find.hits.length} · ` : '') + `${total} found`;
+  ['findPrev', 'findNext', 'findOne', 'findAll'].forEach(id => $(id).disabled = !find.hits.length);
+}
+function goHit(dir) {
+  if (!find.hits.length) return;
+  find.i = (find.i + dir + find.hits.length) % find.hits.length;
+  const b = find.hits[find.i];
+  if (!state.sel.has(b)) select(b);
+  b.el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+  refreshFind();
+}
+function replaceIn(b) {
+  const re = findRe(), rep = $('findR').value;
+  const text = b.text.replace(re, () => rep);
+  if (text === b.text) return 0;
+  const n = (b.text.match(re) || []).length;
+  b.text = text; b.el.textContent = text;
+  markDirty(b); styleBox(b); commit(b, null);
+  return n;
+}
+$('findQ').addEventListener('input', () => { find.i = -1; refreshFind(); });
+$('findCase').addEventListener('change', () => { find.i = -1; refreshFind(); });
+$('findQ').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); goHit(e.shiftKey ? -1 : 1); } });
+$('findR').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('findOne').click(); } });
+$('findbar').addEventListener('keydown', e => { if (e.key === 'Escape') { closeFind(); e.stopPropagation(); } });
+$('findPrev').addEventListener('click', () => goHit(-1));
+$('findNext').addEventListener('click', () => goHit(1));
+$('findOne').addEventListener('click', () => {
+  if (find.i < 0) return goHit(1); // first show the match, then replace on the next click
+  const i = find.i;
+  replaceIn(find.hits[i]);
+  refreshFind();
+  find.i = i - 1;
+  goHit(1);
+});
+$('findAll').addEventListener('click', () => {
+  if (!find.hits.length) return;
+  let n = 0;
+  beginBatch();
+  for (const b of find.hits) n += replaceIn(b);
+  endBatch();
+  find.i = -1; refreshFind();
+  toast(`Replaced ${n} match${n === 1 ? '' : 'es'}`);
+});
+$('findClose').addEventListener('click', closeFind);
+$('findBtn').addEventListener('click', () => { if (!state.pages.length) return toast('Open a PDF first'); $('findbar').hidden ? openFind() : closeFind(); });
+
+// ---------- zoom ----------
+// Zoom scales the page area with CSS; all positions stay in the same layout units, and the
+// canvases are re-rendered at the new resolution shortly after zooming stops.
+const ZOOMS = [0.5, 0.67, 0.75, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+function setZoom(z) {
+  if (!state.pages.length) return;
+  z = Math.min(3, Math.max(0.5, z));
+  const m = mainEl;
+  const cx = (m.scrollLeft + m.clientWidth / 2) / m.scrollWidth, cy = (m.scrollTop + m.clientHeight / 2) / m.scrollHeight;
+  state.zoom = z;
+  pagesEl.style.zoom = z;
+  $('zoomLbl').textContent = Math.round(z * 100) + '%';
+  m.scrollLeft = cx * m.scrollWidth - m.clientWidth / 2;
+  m.scrollTop = cy * m.scrollHeight - m.clientHeight / 2;
+  clearTimeout(state.zoomTimer);
+  state.zoomTimer = setTimeout(() => state.pages.forEach(p => renderPage(p).catch(console.error)), 200);
+}
+function zoomStep(dir) {
+  const z = state.zoom;
+  setZoom(dir > 0 ? (ZOOMS.find(v => v > z + 0.001) ?? 3) : ([...ZOOMS].reverse().find(v => v < z - 0.001) ?? 0.5));
+}
+$('zoomIn').addEventListener('click', () => zoomStep(1));
+$('zoomOut').addEventListener('click', () => zoomStep(-1));
+$('zoomLbl').addEventListener('click', () => setZoom(1));
+let wheelAcc = 0;
+mainEl.addEventListener('wheel', e => {
+  if (!e.ctrlKey || !state.pages.length) return;
+  e.preventDefault();
+  wheelAcc += e.deltaY;
+  if (Math.abs(wheelAcc) >= 40) { zoomStep(wheelAcc < 0 ? 1 : -1); wheelAcc = 0; }
+}, { passive: false });
+
+// ---------- page tools ----------
+const pageSnap = () => ({ order: [...state.order], rot: state.pages.map(p => p.rot), del: state.pages.map(p => p.deleted) });
+function applyPages(s) {
+  state.order = [...s.order];
+  state.pages.forEach((p, i) => { p.rot = s.rot[i]; p.deleted = s.del[i]; });
+  layoutPages(); updateStatusCount(); refreshFind();
+}
+function recordPages(before) {
+  const after = pageSnap();
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
+  pushOp(() => applyPages(before), () => applyPages(after));
+}
+
+// Put slots in display order and apply rotation (rotated pages are view-only until rotated back)
+function layoutPages() {
+  const live = state.order.filter(i => !state.pages[i].deleted);
+  for (const i of state.order) {
+    const p = state.pages[i], side = p.rot % 180 !== 0;
+    pagesEl.append(p.slot);
+    p.slot.hidden = p.deleted;
+    p.frame.style.width = (side ? p.vp.height : p.vp.width) + 'px';
+    p.frame.style.height = (side ? p.vp.width : p.vp.height) + 'px';
+    p.wrap.style.position = 'absolute';
+    p.wrap.style.left = '50%';
+    p.wrap.style.top = '50%';
+    p.wrap.style.transform = `translate(-50%, -50%) rotate(${p.rot}deg)`;
+    p.slot.classList.toggle('rotated', p.rot !== 0);
+    const pos = live.indexOf(i);
+    p.num.textContent = `${pos + 1} / ${live.length}` + (p.rot ? ` · rotated ${p.rot}° (rotate back to edit)` : '');
+    p.slot.querySelector('[data-act=up]').disabled = pos <= 0;
+    p.slot.querySelector('[data-act=down]').disabled = pos >= live.length - 1;
+    p.slot.querySelector('[data-act=del]').disabled = live.length <= 1;
+  }
+}
+
+function pageAction(i, act) {
+  const before = pageSnap(), p = state.pages[i];
+  if (act === 'up' || act === 'down') {
+    const live = state.order.filter(j => !state.pages[j].deleted);
+    const j = live[live.indexOf(i) + (act === 'up' ? -1 : 1)];
+    if (j === undefined) return;
+    const a = state.order.indexOf(i), b = state.order.indexOf(j);
+    [state.order[a], state.order[b]] = [state.order[b], state.order[a]];
+  } else if (act === 'rot') {
+    p.rot = (p.rot + 90) % 360;
+  } else if (act === 'del') {
+    if (state.order.filter(j => !state.pages[j].deleted).length <= 1) return toast("Can't delete the only page");
+    p.deleted = true;
+    toast('Page deleted — Ctrl+Z to undo');
+  }
+  if (act !== 'up' && act !== 'down') { clearSel(); updateToolbar(); }
+  layoutPages();
+  recordPages(before);
+  refreshFind();
+  if (!p.deleted) p.slot.scrollIntoView({ block: 'nearest' });
+}
+pagesEl.addEventListener('click', e => {
+  const btn = e.target.closest('.ptools button');
+  if (btn) pageAction(+btn.closest('.slot').dataset.page, btn.dataset.act);
+});
+
+// ---------- images, signatures & redactions ----------
+// "Shapes" sit above the text on a page; they can be dragged in any mode and resized from the corner.
+const shapeSnap = s => ({ left: s.left, top: s.top, w: s.w, h: s.h, deleted: s.deleted });
+function styleShape(s) {
+  Object.assign(s.el.style, { left: s.left + 'px', top: s.top + 'px', width: s.w + 'px', height: s.h + 'px' });
+}
+function addShape(props) {
+  const s = { deleted: false, ...props };
+  s.el = document.createElement('div');
+  s.el.className = 'shape ' + s.kind;
+  if (s.kind === 'image') {
+    const img = new Image();
+    img.src = s.src; img.alt = ''; img.draggable = false;
+    s.el.append(img);
+  }
+  const handle = document.createElement('div');
+  handle.className = 'handle';
+  s.el.append(handle);
+  s.el.addEventListener('pointerdown', e => dragShape(e, s, e.target === handle));
+  styleShape(s);
+  state.pages[s.page].layer.append(s.el);
+  state.shapes.push(s);
+  return s;
+}
+function applyShape(s, v) {
+  Object.assign(s, v);
+  if (s.deleted) {
+    s.el.remove();
+    if (state.shape === s) selectShape(null);
+  } else {
+    if (!s.el.isConnected) state.pages[s.page].layer.append(s.el);
+    styleShape(s);
+  }
+  updateStatusCount();
+}
+function recordShape(s, before) {
+  const after = shapeSnap(s);
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
+  pushOp(() => applyShape(s, before), () => applyShape(s, after));
+}
+function deleteShape(s) {
+  const before = shapeSnap(s);
+  applyShape(s, { deleted: true });
+  recordShape(s, before);
+}
+
+function dragShape(e, s, resize) {
+  if (e.button !== 0) return;
+  e.preventDefault(); e.stopPropagation();
+  if (document.activeElement?.classList.contains('box')) document.activeElement.blur();
+  selectShape(s);
+  const layer = state.pages[s.page].layer, z = scaleOf(layer), W = layer.clientWidth, H = layer.clientHeight;
+  const before = shapeSnap(s), ratio = before.w / before.h, sx = e.clientX, sy = e.clientY;
+  let moved = false;
+  s.el.setPointerCapture(e.pointerId);
+  const onMove = ev => {
+    const dx = (ev.clientX - sx) / z, dy = (ev.clientY - sy) / z;
+    if (!moved && Math.hypot(dx, dy) < 2) return;
+    moved = true;
+    if (resize) {
+      let w = Math.max(12, Math.min(W - s.left, before.w + dx));
+      let h = Math.max(6, Math.min(H - s.top, before.h + dy));
+      if (s.kind === 'image' && !ev.shiftKey) { // keep proportions (Shift = free resize)
+        h = w / ratio;
+        if (h > H - s.top) { h = H - s.top; w = h * ratio; }
+      }
+      s.w = w; s.h = h;
+    } else {
+      s.left = Math.max(0, Math.min(W - s.w, before.left + dx));
+      s.top = Math.max(0, Math.min(H - s.h, before.top + dy));
+    }
+    styleShape(s);
+  };
+  const onUp = () => {
+    s.el.removeEventListener('pointermove', onMove);
+    s.el.removeEventListener('pointerup', onUp);
+    s.el.removeEventListener('pointercancel', onUp);
+    if (moved) recordShape(s, before);
+  };
+  s.el.addEventListener('pointermove', onMove);
+  s.el.addEventListener('pointerup', onUp);
+  s.el.addEventListener('pointercancel', onUp);
+}
+
+// Redact mode: drag on a page to draw a black box
+pagesEl.addEventListener('pointerdown', e => {
+  if (state.mode !== 'redact' || !e.target.classList.contains('layer') || e.button !== 0) return;
+  e.preventDefault();
+  const layer = e.target, page = +layer.dataset.page, p0 = toLayer(e, layer);
+  const s = addShape({ kind: 'redact', page, left: p0.x, top: p0.y, w: 0, h: 0 });
+  layer.setPointerCapture(e.pointerId);
+  const onMove = ev => {
+    const p = toLayer(ev, layer);
+    const x = Math.max(0, Math.min(layer.clientWidth, p.x)), y = Math.max(0, Math.min(layer.clientHeight, p.y));
+    s.left = Math.min(p0.x, x); s.top = Math.min(p0.y, y);
+    s.w = Math.abs(x - p0.x); s.h = Math.abs(y - p0.y);
+    styleShape(s);
+  };
+  const onUp = () => {
+    layer.removeEventListener('pointermove', onMove);
+    layer.removeEventListener('pointerup', onUp);
+    layer.removeEventListener('pointercancel', onUp);
+    if (s.w < 4 || s.h < 4) { s.el.remove(); state.shapes = state.shapes.filter(x => x !== s); return; }
+    recordShape(s, { ...shapeSnap(s), deleted: true });
+    selectShape(s);
+  };
+  layer.addEventListener('pointermove', onMove);
+  layer.addEventListener('pointerup', onUp);
+  layer.addEventListener('pointercancel', onUp);
+});
+
+const readDataURL = blob => new Promise((res, rej) => {
+  const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(new Error('Could not read that file')); r.readAsDataURL(blob);
+});
+const loadImg = src => new Promise((res, rej) => {
+  const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Could not read that image')); i.src = src;
+});
+const dataURLBytes = url => Uint8Array.from(atob(url.split(',')[1]), c => c.charCodeAt(0));
+
+async function insertImageFile(file) {
+  if (!state.pages.length) return toast('Open a PDF first');
+  try {
+    let src = await readDataURL(file), mime = file.type;
+    const img = await loadImg(src);
+    if (mime !== 'image/png' && mime !== 'image/jpeg') { // WebP, GIF, …: convert to PNG for the PDF
+      const c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      src = c.toDataURL('image/png'); mime = 'image/png';
+    }
+    placeImage(src, mime, img.naturalWidth, img.naturalHeight, 0.4);
+  } catch (err) { toast(err.message); }
+}
+
+// Page nearest the middle of the view (skipping deleted and rotated pages)
+function visiblePage() {
+  const m = mainEl.getBoundingClientRect(), mid = m.top + m.height / 2;
+  let best = null, bestD = Infinity;
+  for (const i of state.order) {
+    const p = state.pages[i];
+    if (p.deleted || p.rot) continue;
+    const r = p.layer.getBoundingClientRect();
+    const d = mid < r.top ? r.top - mid : mid > r.bottom ? mid - r.bottom : 0;
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return best;
+}
+
+// Drop an image onto the page in view, centred, at most maxFrac of the page in each direction
+function placeImage(src, mime, nw, nh, maxFrac) {
+  const page = visiblePage();
+  if (page == null) return toast('No editable page in view');
+  const p = state.pages[page], W = p.layer.clientWidth, H = p.layer.clientHeight;
+  let w = Math.min(nw * 0.75 * p.scale, W * maxFrac), h = w * nh / nw;
+  if (h > H * maxFrac) { h = H * maxFrac; w = h * nw / nh; }
+  const r = p.layer.getBoundingClientRect(), m = mainEl.getBoundingClientRect();
+  const cy = (m.top + m.height / 2 - r.top) / scaleOf(p.layer);
+  const s = addShape({
+    kind: 'image', page, src, mime, bytes: dataURLBytes(src), w, h,
+    left: (W - w) / 2, top: Math.max(0, Math.min(H - h, cy - h / 2)),
+  });
+  recordShape(s, { ...shapeSnap(s), deleted: true });
+  selectShape(s);
+  toast('Drag to place it · drag the corner to resize');
+}
+$('imgInput').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) insertImageFile(f); });
+
+// Signature pad: smooth strokes, then crop to the ink and place it as a transparent PNG
+const sig = { pad: $('sigPad'), color: '#111111', drawing: false, ink: false, last: null, mid: null };
+const sctx = sig.pad.getContext('2d');
+function sigReset() {
+  sctx.clearRect(0, 0, sig.pad.width, sig.pad.height);
+  sig.ink = false;
+  $('sigOk').disabled = true;
+}
+function padPoint(e) {
+  const r = sig.pad.getBoundingClientRect();
+  return [(e.clientX - r.left) * sig.pad.width / r.width, (e.clientY - r.top) * sig.pad.height / r.height];
+}
+$('sigBtn').addEventListener('click', () => {
+  if (!state.pages.length) return toast('Open a PDF first');
+  sigReset();
+  $('sigDlg').returnValue = '';
+  $('sigDlg').showModal();
+});
+sig.pad.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  sig.pad.setPointerCapture(e.pointerId);
+  sig.drawing = true;
+  sig.last = sig.mid = padPoint(e);
+  Object.assign(sctx, { strokeStyle: sig.color, fillStyle: sig.color, lineWidth: 5, lineCap: 'round', lineJoin: 'round' });
+  sctx.beginPath(); sctx.arc(sig.last[0], sig.last[1], 2.5, 0, Math.PI * 2); sctx.fill();
+  sig.ink = true; $('sigOk').disabled = false;
+});
+sig.pad.addEventListener('pointermove', e => {
+  if (!sig.drawing) return;
+  const p = padPoint(e), mid = [(sig.last[0] + p[0]) / 2, (sig.last[1] + p[1]) / 2];
+  sctx.beginPath();
+  sctx.moveTo(sig.mid[0], sig.mid[1]);
+  sctx.quadraticCurveTo(sig.last[0], sig.last[1], mid[0], mid[1]);
+  sctx.stroke();
+  sig.last = p; sig.mid = mid;
+});
+['pointerup', 'pointercancel'].forEach(t => sig.pad.addEventListener(t, () => { sig.drawing = false; }));
+$('sigClear').addEventListener('click', sigReset);
+document.querySelectorAll('.pen').forEach(b => b.addEventListener('click', () => {
+  sig.color = b.dataset.c;
+  document.querySelectorAll('.pen').forEach(x => x.classList.toggle('on', x === b));
+}));
+$('sigDlg').addEventListener('close', () => {
+  if ($('sigDlg').returnValue !== 'ok' || !sig.ink) return;
+  const { width: W, height: H } = sig.pad, d = sctx.getImageData(0, 0, W, H).data;
+  let x0 = W, y0 = H, x1 = -1, y1 = -1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (d[(y * W + x) * 4 + 3] > 8) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  }
+  if (x1 < 0) return;
+  x0 = Math.max(0, x0 - 6); y0 = Math.max(0, y0 - 6); x1 = Math.min(W - 1, x1 + 6); y1 = Math.min(H - 1, y1 + 6);
+  const c = document.createElement('canvas');
+  c.width = x1 - x0 + 1; c.height = y1 - y0 + 1;
+  c.getContext('2d').drawImage(sig.pad, x0, y0, c.width, c.height, 0, 0, c.width, c.height);
+  placeImage(c.toDataURL('image/png'), 'image/png', c.width, c.height, 0.3);
+});
 
 // ---------- decryption ----------
 // Many PDFs (bank statements, payslips, exported docs) are encrypted with an empty user password:
@@ -945,21 +1720,21 @@ $('download').addEventListener('click', async () => {
       const name = StandardFonts[key + suffix] || StandardFonts[key];
       return fontCache[name] ||= await pdf.embedFont(name);
     };
+    // Page rectangle in layout px -> PDF user space
+    const toPdfRect = (vp, left, top, w, h) => {
+      const a = vp.convertToPdfPoint(left, top + h), b = vp.convertToPdfPoint(left + w, top);
+      return { x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]), width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]) };
+    };
 
     const edited = state.boxes.filter(b => b.dirty && !b.deleted);
-    // Cover all edited/moved originals first, so a white-out never hides text moved over it
+    // Cover all edited/moved originals first, so a cover never hides text moved over it
     for (const box of edited) {
-      const page = pdfPages[box.page];
-      const { vp } = state.pages[box.page];
-      if (box.orig) {
-        const o = box.orig;
-        const a = vp.convertToPdfPoint(o.left - 1, o.top - 1);
-        const b = vp.convertToPdfPoint(o.left + o.width + 1, o.top + o.height + 1);
-        page.drawRectangle({
-          x: Math.min(a[0], b[0]), y: Math.min(a[1], b[1]),
-          width: Math.abs(b[0] - a[0]), height: Math.abs(b[1] - a[1]), color: hexToRgb(o.bg || '#ffffff'),
-        });
-      }
+      if (!box.orig) continue;
+      const o = box.orig;
+      pdfPages[box.page].drawRectangle({
+        ...toPdfRect(state.pages[box.page].vp, o.left - 1, o.top - 1, o.width + 2, o.height + 2),
+        color: hexToRgb(o.bg || '#ffffff'),
+      });
     }
 
     const pageFontCache = {};
@@ -979,14 +1754,65 @@ $('download').addEventListener('click', async () => {
       });
     }
 
-    const out = await pdf.save();
+    // Images and signatures
+    const imgCache = new Map();
+    for (const s of state.shapes) {
+      if (s.deleted || s.kind !== 'image') continue;
+      let img = imgCache.get(s.src);
+      if (!img) {
+        img = s.mime === 'image/jpeg' ? await pdf.embedJpg(s.bytes) : await pdf.embedPng(s.bytes);
+        imgCache.set(s.src, img);
+      }
+      pdfPages[s.page].drawImage(img, toPdfRect(state.pages[s.page].vp, s.left, s.top, s.w, s.h));
+    }
+
+    // Redactions: a black box alone would leave the text underneath selectable, so each redacted
+    // page is rendered to an image with the boxes painted in, and replaces the original page.
+    const reds = state.shapes.filter(s => !s.deleted && s.kind === 'redact' && !state.pages[s.page].deleted);
+    const flattened = new Set();
+    if (reds.length) {
+      status('Applying redactions…');
+      const doc2 = await pdfjsLib.getDocument({ data: await pdf.save() }).promise;
+      for (const i of new Set(reds.map(s => s.page))) {
+        const pg = await doc2.getPage(i + 1), vp1 = pg.getViewport({ scale: 1 });
+        const k = Math.min(2.5, 5000 / Math.max(vp1.width, vp1.height)); // ~180 dpi
+        const vpk = pg.getViewport({ scale: k });
+        const c = document.createElement('canvas');
+        c.width = Math.ceil(vpk.width); c.height = Math.ceil(vpk.height);
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+        await pg.render({ canvasContext: ctx, viewport: vpk }).promise;
+        const f = k / state.pages[i].scale;
+        ctx.fillStyle = '#000';
+        for (const s of reds) if (s.page === i) ctx.fillRect(s.left * f, s.top * f, s.w * f, s.h * f);
+        const jpg = await pdf.embedJpg(dataURLBytes(c.toDataURL('image/jpeg', 0.92)));
+        pdf.removePage(i);
+        pdf.insertPage(i, [vp1.width, vp1.height]).drawImage(jpg, { x: 0, y: 0, width: vp1.width, height: vp1.height });
+        flattened.add(i);
+      }
+      await doc2.destroy();
+    }
+
+    // Page order, rotation and deletion (flattened pages already have their original rotation baked in)
+    const live = state.order.filter(i => !state.pages[i].deleted);
+    const rotation = (p, i) => PDFLib.degrees(((flattened.has(i) ? 0 : p.getRotation().angle) + state.pages[i].rot) % 360);
+    let outDoc = pdf;
+    if (live.length !== state.pages.length || live.some((v, k) => v !== k)) {
+      outDoc = await PDFDocument.create();
+      const copies = await outDoc.copyPages(pdf, live);
+      copies.forEach((p, k) => { p.setRotation(rotation(p, live[k])); outDoc.addPage(p); });
+    } else {
+      pdf.getPages().forEach((p, i) => { if (state.pages[i].rot) p.setRotation(rotation(p, i)); });
+    }
+
+    const out = await outDoc.save();
     const url = URL.createObjectURL(new Blob([out], { type: 'application/pdf' }));
     const a = document.createElement('a');
     a.href = url;
     a.download = state.name.replace(/\.pdf$/i, '') + '-edited.pdf';
     document.body.append(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 10000);
-    toast('Downloaded ' + a.download);
+    toast('Downloaded ' + a.download + (flattened.size ? ` · ${flattened.size} redacted page${flattened.size > 1 ? 's' : ''} flattened` : ''));
   } catch (err) {
     console.error(err);
     toast('Could not build the PDF: ' + err.message, 5000);
@@ -1064,7 +1890,8 @@ function hexToRgb(hex) {
 // ---------- ui helpers ----------
 function status(s) { $('status').textContent = s; }
 function updateStatusCount() {
-  const n = state.boxes.filter(b => b.dirty && !b.deleted).length;
+  const n = state.boxes.filter(b => b.dirty && !b.deleted).length + state.shapes.filter(s => !s.deleted).length
+    + state.pages.filter(p => p.rot || p.deleted).length + (state.order.some((v, k) => v !== k) ? 1 : 0);
   status(n ? `${n} change${n > 1 ? 's' : ''} · ${state.name}` : state.name);
 }
 let toastTimer;
